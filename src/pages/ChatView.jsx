@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useNavigate, useParams, useLocation } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ArrowUp, Pause, ChevronLeft, Plus } from 'lucide-react'
 import { mockChats, characters, seedMessages } from '../data/mockData'
@@ -32,10 +32,11 @@ function renderWithMentions(text) {
 export default function ChatView() {
   const { id } = useParams()
   const navigate = useNavigate()
+  const location = useLocation()
   const bottomRef = useRef(null)
   const inputRef = useRef(null)
 
-  const chat = mockChats.find(c => c.id === id) || {
+  const chat = location.state?.chat || mockChats.find(c => c.id === id) || {
     id: 'solo-miku',
     name: 'Miku',
     characterIds: ['miku'],
@@ -215,7 +216,7 @@ export default function ChatView() {
       {!isSolo && (
         <div className="flex justify-center px-4 py-2 flex-shrink-0">
           <span className="text-xs px-3 py-1 rounded-full" style={{ background: '#7C3AED22', color: '#A78BFA', border: '1px solid #7C3AED44' }}>
-            ✦ {chat.name.includes('Miku') ? 'Summer Festival Tour 2087' : chat.name}
+            ✦ {chat.scene ? chat.scene.slice(0, 60) + (chat.scene.length > 60 ? '…' : '') : chat.name}
           </span>
         </div>
       )}

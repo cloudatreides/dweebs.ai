@@ -1,18 +1,19 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ChevronLeft, Plus, X } from 'lucide-react'
+import { ChevronLeft, Plus, X, Sparkles } from 'lucide-react'
 import { characters } from '../data/mockData'
+import { SCENE_TEMPLATES } from '../data/sceneTemplates'
 import CharacterAvatar from '../components/CharacterAvatar'
 import BottomSheet from '../components/BottomSheet'
 
-const MAX_SCENE = 150
+const MAX_SCENE = 200
 
 export default function NewChat() {
   const navigate = useNavigate()
 
-  const [selectedIds, setSelectedIds] = useState(['miku', 'ariana'])
-  const [groupName, setGroupName] = useState('Miku × Ariana — Late Night Session')
-  const [scene, setScene] = useState('Two music legends meet at a late-night recording studio during summer festival season. They\'re planning their surprise collab set together.')
+  const [selectedIds, setSelectedIds] = useState([])
+  const [groupName, setGroupName] = useState('')
+  const [scene, setScene] = useState('')
   const [showPicker, setShowPicker] = useState(false)
 
   const selectedChars = selectedIds.map(id => characters.find(c => c.id === id))
@@ -36,11 +37,28 @@ export default function NewChat() {
     setShowPicker(false)
   }
 
-  const canStart = selectedIds.length >= 2
+  const surpriseMe = () => {
+    const names = selectedIds.map(id => characters.find(c => c.id === id)?.name.split(' ')[0])
+    const template = SCENE_TEMPLATES[Math.floor(Math.random() * SCENE_TEMPLATES.length)]
+    let result = template
+    names.forEach((name, i) => {
+      result = result.replace(new RegExp(`\\{char${i + 1}\\}`, 'g'), name)
+    })
+    // Fill any unreplaced placeholders with the last available name
+    result = result.replace(/\{char\d\}/g, names[names.length - 1] || '')
+    setScene(result.slice(0, MAX_SCENE))
+  }
+
+  const canStart = selectedIds.length >= 1
 
   const handleStart = () => {
-    // In a real app, create the chat — here we navigate to chat 1 for demo
-    navigate('/chat/1')
+    const newChat = {
+      id: `chat-${Date.now()}`,
+      name: groupName || autoName(selectedIds),
+      characterIds: selectedIds,
+      scene: scene || '',
+    }
+    navigate(`/chat/${newChat.id}`, { state: { chat: newChat } })
   }
 
   return (
@@ -105,33 +123,47 @@ export default function NewChat() {
           <input
             value={groupName}
             onChange={e => setGroupName(e.target.value)}
-            className="w-full px-4 py-3 rounded-xl text-sm text-white outline-none"
+            placeholder="e.g. Miku × Ariana — Late Night Session"
+            className="w-full px-4 py-3 rounded-xl text-sm text-white outline-none placeholder:text-[#374151]"
             style={{ background: '#1A1A1F', border: '1px solid rgba(255,255,255,0.06)' }}
           />
         </div>
 
         {/* Set the Scene */}
         <div>
-          <p className="text-[11px] font-semibold tracking-widest uppercase mb-2" style={{ color: '#6B7280' }}>
-            Set the Scene
-          </p>
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-[11px] font-semibold tracking-widest uppercase" style={{ color: '#6B7280' }}>
+              Set the Scene
+            </p>
+            <button
+              onClick={surpriseMe}
+              disabled={selectedIds.length === 0}
+              className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold transition-opacity"
+              style={{
+                background: 'rgba(124,58,237,0.15)',
+                border: '1px solid rgba(124,58,237,0.35)',
+                color: selectedIds.length === 0 ? '#4B5563' : '#A78BFA',
+                opacity: selectedIds.length === 0 ? 0.5 : 1,
+              }}
+            >
+              <Sparkles size={11} />
+              Surprise Me
+            </button>
+          </div>
           <div className="relative">
             <textarea
               value={scene}
               onChange={e => setScene(e.target.value.slice(0, MAX_SCENE))}
               rows={4}
-              className="w-full px-4 py-3 rounded-xl text-sm text-white outline-none resize-none"
+              placeholder="Describe where they are and what's happening. The more specific, the better."
+              className="w-full px-4 py-3 rounded-xl text-sm text-white outline-none resize-none placeholder:text-[#374151]"
               style={{ background: '#1A1A1F', border: '1px solid rgba(255,255,255,0.06)' }}
             />
-            <span className="absolute bottom-3 right-3 text-[11px]" style={{ color: scene.length > 130 ? '#F87171' : '#6B7280' }}>
-              {scene.length} / {MAX_SCENE}
-            </span>
-          </div>
-          <div className="flex items-center gap-2 mt-2">
-            <span style={{ color: '#7C3AED' }}>✦</span>
-            <span className="text-xs" style={{ color: '#A78BFA' }}>
-              Pro tip: Specific scenarios create richer conversations
-            </span>
+            {scene.length > 0 && (
+              <span className="absolute bottom-3 right-3 text-[11px]" style={{ color: scene.length > 180 ? '#F87171' : '#6B7280' }}>
+                {scene.length} / {MAX_SCENE}
+              </span>
+            )}
           </div>
         </div>
       </div>

@@ -123,7 +123,7 @@ export const characters = [
     fandom: 'K-pop · BTS',
     color: '#F472B6',
     emoji: '🌸',
-    avatar: 'https://wsrv.nl/?url=upload.wikimedia.org/wikipedia/commons/thumb/7/77/Jimin_on_Melon_Music_Awards_2016.jpg/440px-Jimin_on_Melon_Music_Awards_2016.jpg&w=200&output=webp',
+    avatar: 'https://wsrv.nl/?url=upload.wikimedia.org/wikipedia/commons/thumb/0/0e/20180815_Jimin.jpg/400px-20180815_Jimin.jpg&w=200&output=webp',
     tags: ['Gentle', 'Passionate'],
     quote: "I want to be someone who makes you feel less alone. 🌸",
     bio: "I want to be someone who makes you feel less alone. 🌸 Every performance is a piece of my soul.",
