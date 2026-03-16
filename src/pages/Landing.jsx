@@ -199,7 +199,14 @@ function CharacterCarousel() {
 
 export default function Landing() {
   const navigate = useNavigate()
-  const { user } = useAuth()
+  const { user, loading } = useAuth()
+
+  // If user lands here with auth tokens (OAuth callback) or already logged in, go to /home
+  useEffect(() => {
+    if (!loading && user) {
+      navigate('/home', { replace: true })
+    }
+  }, [user, loading])
 
   const handleCTA = () => navigate(user ? '/home' : '/login')
 
