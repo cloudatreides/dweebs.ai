@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Bell, Search, Plus, X, ChevronLeft, Camera, Lock, Globe, MessageCircle, ArrowUpDown } from 'lucide-react'
+import { Bell, Search, Plus, X, ChevronLeft, Camera, Lock, Globe, MessageCircle, ArrowUpDown, LogOut } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useCharacters } from '../context/CharacterContext'
 import { useAuth } from '../context/AuthContext'
@@ -175,7 +175,7 @@ const SORT_OPTIONS = [
 
 export default function Discover() {
   const navigate = useNavigate()
-  const { user } = useAuth()
+  const { user, signOut } = useAuth()
   const { allCharacters, saveCustomCharacter } = useCharacters()
   const [search, setSearch] = useState('')
   const [filter, setFilter] = useState('All')
@@ -263,7 +263,12 @@ export default function Discover() {
       {/* Header */}
       <div className="flex items-center justify-between px-5 pt-12 md:pt-8 pb-3">
         <h1 className="text-xl font-bold text-white">Discover</h1>
-        <button><Bell size={20} color="#6B7280" /></button>
+        <div className="flex items-center gap-3">
+          <button onClick={async () => { await signOut(); navigate('/') }} title="Sign out">
+            <LogOut size={18} color="#6B7280" />
+          </button>
+          <button><Bell size={20} color="#6B7280" /></button>
+        </div>
       </div>
 
       {/* Search */}
