@@ -10,7 +10,9 @@ export default function AppLayout({ children }) {
 
       {/* Main content area */}
       <div className="flex-1 overflow-hidden min-w-0">
-        {children}
+        <div className="h-full max-w-[1100px]">
+          {children}
+        </div>
       </div>
     </div>
   )
