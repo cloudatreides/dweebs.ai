@@ -1,5 +1,5 @@
 import { useNavigate, useLocation } from 'react-router-dom'
-import { Home, Compass, Plus, User } from 'lucide-react'
+import { Compass, MessageSquare, Plus, User } from 'lucide-react'
 
 export default function BottomNav() {
   const navigate = useNavigate()
@@ -17,7 +17,7 @@ export default function BottomNav() {
         onClick={() => navigate('/home')}
         className="flex flex-col items-center gap-1"
       >
-        <Home
+        <Compass
           size={22}
           color={isActive('/home') ? '#7C3AED' : '#6B7280'}
           strokeWidth={isActive('/home') ? 2.5 : 1.8}
@@ -26,24 +26,24 @@ export default function BottomNav() {
           className="text-[10px]"
           style={{ color: isActive('/home') ? '#7C3AED' : '#6B7280' }}
         >
-          Home
+          Discover
         </span>
       </button>
 
       <button
-        onClick={() => navigate('/discover')}
+        onClick={() => navigate('/my-worlds')}
         className="flex flex-col items-center gap-1"
       >
-        <Compass
+        <MessageSquare
           size={22}
-          color={isActive('/discover') ? '#7C3AED' : '#6B7280'}
-          strokeWidth={isActive('/discover') ? 2.5 : 1.8}
+          color={isActive('/my-worlds') ? '#7C3AED' : '#6B7280'}
+          strokeWidth={isActive('/my-worlds') ? 2.5 : 1.8}
         />
         <span
           className="text-[10px]"
-          style={{ color: isActive('/discover') ? '#7C3AED' : '#6B7280' }}
+          style={{ color: isActive('/my-worlds') ? '#7C3AED' : '#6B7280' }}
         >
-          Discover
+          My Worlds
         </span>
       </button>
 

@@ -2,7 +2,9 @@ import { useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Bell, Search, Plus, X, ChevronLeft, Camera, Lock, Globe, MessageCircle, ArrowUpDown } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { characters as defaultCharacters } from '../data/mockData'
+import { useCharacters } from '../context/CharacterContext'
+import { useAuth } from '../context/AuthContext'
+import { createChat } from '../lib/db'
 import BottomNav from '../components/BottomNav'
 import BottomSheet from '../components/BottomSheet'
 import CharacterAvatar from '../components/CharacterAvatar'
@@ -63,8 +65,33 @@ function CharacterCard({ char, onClick }) {
   )
 }
 
-function CharDetailContent({ char, navigate, onClose }) {
+function CharDetailContent({ char, navigate, onClose, userId }) {
   const [imgFailed, setImgFailed] = useState(false)
+  const [starting, setStarting] = useState(false)
+
+  const handleSoloChat = async () => {
+    if (starting) return
+    setStarting(true)
+    try {
+      const newChat = await createChat({
+        userId,
+        name: char.name,
+        scene: '',
+        characterIds: [char.id],
+      })
+      onClose()
+      navigate(`/chat/${newChat.id}`)
+    } catch (err) {
+      console.error('Failed to create solo chat:', err)
+      setStarting(false)
+    }
+  }
+
+  const handleAddToGroup = () => {
+    onClose()
+    navigate('/new-chat', { state: { preselectedCharId: char.id } })
+  }
+
   return (
     <div className="px-5 pb-8 pt-2 text-center">
       <div className="w-20 h-20 rounded-full overflow-hidden flex items-center justify-center text-4xl mx-auto mb-3"
@@ -103,14 +130,15 @@ function CharDetailContent({ char, navigate, onClose }) {
       <p className="text-sm italic leading-relaxed mb-6" style={{ color: '#9CA3AF' }}>"{char.bio}"</p>
       <div className="flex gap-3">
         <button
-          onClick={() => { onClose(); navigate(`/chat/solo-${char.id}`) }}
-          className="flex-1 py-3.5 rounded-full font-semibold text-sm"
-          style={{ border: '1.5px solid rgba(255,255,255,0.15)', color: 'white', background: 'transparent' }}
+          onClick={handleSoloChat}
+          disabled={starting}
+          className="flex-1 py-3.5 rounded-full font-semibold text-sm transition-opacity"
+          style={{ border: '1.5px solid rgba(255,255,255,0.15)', color: 'white', background: 'transparent', opacity: starting ? 0.5 : 1 }}
         >
-          Solo Chat
+          {starting ? 'Creating...' : 'Solo Chat'}
         </button>
         <button
-          onClick={() => { onClose(); navigate('/new-chat') }}
+          onClick={handleAddToGroup}
           className="flex-1 py-3.5 rounded-full font-semibold text-sm text-white"
           style={{ background: '#7C3AED' }}
         >
@@ -147,18 +175,18 @@ const SORT_OPTIONS = [
 
 export default function Discover() {
   const navigate = useNavigate()
+  const { user } = useAuth()
+  const { allCharacters, saveCustomCharacter } = useCharacters()
   const [search, setSearch] = useState('')
   const [filter, setFilter] = useState('All')
   const [sort, setSort] = useState('popular')
   const [sortOpen, setSortOpen] = useState(false)
   const [selectedChar, setSelectedChar] = useState(null)
   const [showCreateSheet, setShowCreateSheet] = useState(false)
-  const [customCharacters, setCustomCharacters] = useState([])
   const [form, setForm] = useState(DEFAULT_FORM)
   const [createStep, setCreateStep] = useState(1)
+  const [saving, setSaving] = useState(false)
   const fileInputRef = useRef(null)
-
-  const allCharacters = [...defaultCharacters, ...customCharacters]
 
   const filtered = allCharacters
     .filter(c => {
@@ -204,24 +232,27 @@ export default function Discover() {
     setForm(f => ({ ...f, avatarUrl: url }))
   }
 
-  const handleSaveCharacter = () => {
-    const newChar = {
-      id: `custom-${Date.now()}`,
-      name: form.name,
-      fandom: form.fandom || 'Custom',
-      category: 'Custom',
-      color: form.color,
-      avatar: form.avatarUrl || null,
-      emoji: '🎤',
-      tags: form.tags,
-      quote: form.quote || `Hi, I'm ${form.name}!`,
-      bio: form.bio || `${form.name} — a character created just for you.`,
-      isCustom: true,
-      isPublic: form.isPublic,
+  const handleSaveCharacter = async () => {
+    if (saving) return
+    setSaving(true)
+    try {
+      const savedChar = await saveCustomCharacter({
+        name: form.name,
+        fandom: form.fandom || 'Custom',
+        color: form.color,
+        avatarUrl: form.avatarUrl || null,
+        tags: form.tags,
+        quote: form.quote || `Hi, I'm ${form.name}!`,
+        bio: form.bio || `${form.name} — a character created just for you.`,
+        isPublic: form.isPublic,
+      })
+      handleCreateClose()
+      setSelectedChar(savedChar)
+    } catch (err) {
+      console.error('Failed to save character:', err)
+    } finally {
+      setSaving(false)
     }
-    setCustomCharacters(prev => [newChar, ...prev])
-    handleCreateClose()
-    setSelectedChar(newChar)
   }
 
   const step1Valid = form.name.trim().length > 0
@@ -320,7 +351,7 @@ export default function Discover() {
 
       {/* Character Detail Sheet */}
       <BottomSheet isOpen={!!selectedChar} onClose={() => setSelectedChar(null)}>
-        {selectedChar && <CharDetailContent char={selectedChar} navigate={navigate} onClose={() => setSelectedChar(null)} />}
+        {selectedChar && <CharDetailContent char={selectedChar} navigate={navigate} onClose={() => setSelectedChar(null)} userId={user?.id} />}
       </BottomSheet>
 
       {/* Create Character Sheet */}
@@ -582,10 +613,11 @@ export default function Discover() {
                 <div className="w-full flex flex-col gap-3 mt-2">
                   <button
                     onClick={handleSaveCharacter}
-                    className="w-full py-4 rounded-full font-semibold text-white text-[15px]"
-                    style={{ background: '#7C3AED' }}
+                    disabled={saving}
+                    className="w-full py-4 rounded-full font-semibold text-white text-[15px] transition-opacity"
+                    style={{ background: '#7C3AED', opacity: saving ? 0.6 : 1 }}
                   >
-                    Add to Roster →
+                    {saving ? 'Saving...' : 'Add to Roster →'}
                   </button>
                   <button
                     onClick={() => setCreateStep(2)}

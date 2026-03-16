@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Bell, Plus, Sparkles, LogOut } from 'lucide-react'
-import { characters } from '../data/mockData'
 import { useAuth } from '../context/AuthContext'
+import { useCharacters } from '../context/CharacterContext'
 import { getUserChats } from '../lib/db'
 import BottomNav from '../components/BottomNav'
 
@@ -10,6 +10,7 @@ export default function MyWorlds() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const { user, profile, signOut } = useAuth()
+  const { getCharacter } = useCharacters()
   const isEmpty = searchParams.get('empty') === '1'
 
   const [chats, setChats] = useState([])
@@ -23,7 +24,7 @@ export default function MyWorlds() {
       .finally(() => setLoading(false))
   }, [user])
 
-  const getChars = (ids) => ids.map(id => characters.find(c => c.id === id)).filter(Boolean)
+  const getChars = (ids) => ids.map(id => getCharacter(id)).filter(Boolean)
 
   const handleSignOut = async () => {
     await signOut()

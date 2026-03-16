@@ -1,14 +1,15 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
-import { Compass, Plus, User } from 'lucide-react'
-import { characters } from '../data/mockData'
+import { Compass, MessageSquare, Plus, User } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
+import { useCharacters } from '../context/CharacterContext'
 import { getUserChats } from '../lib/db'
 
 export default function DesktopSidebar() {
   const navigate = useNavigate()
   const location = useLocation()
   const { user } = useAuth()
+  const { getCharacter } = useCharacters()
   const path = location.pathname
   const isActive = (route) => path === route || path.startsWith(route + '/')
 
@@ -49,7 +50,8 @@ export default function DesktopSidebar() {
       {/* Nav links — Discover & Profile */}
       <div className="px-3 mb-2">
         {[
-          { Icon: Compass, label: 'Discover', route: '/discover' },
+          { Icon: Compass, label: 'Discover', route: '/home' },
+          { Icon: MessageSquare, label: 'My Worlds', route: '/my-worlds' },
           { Icon: User, label: 'Profile', route: '/profile' },
         ].map(({ Icon, label, route }) => (
           <button
@@ -77,7 +79,7 @@ export default function DesktopSidebar() {
         </p>
         <div className="flex flex-col gap-0.5">
           {chats.map(chat => {
-            const chars = (chat.character_ids || []).map(id => characters.find(c => c.id === id)).filter(Boolean)
+            const chars = (chat.character_ids || []).map(id => getCharacter(id)).filter(Boolean)
             const active = path === `/chat/${chat.id}`
             return (
               <button

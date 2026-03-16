@@ -1,9 +1,9 @@
-import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useState, useEffect } from 'react'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { ChevronLeft, Plus, X, Sparkles } from 'lucide-react'
-import { characters } from '../data/mockData'
 import { SCENE_TEMPLATES } from '../data/sceneTemplates'
 import { useAuth } from '../context/AuthContext'
+import { useCharacters } from '../context/CharacterContext'
 import { createChat } from '../lib/db'
 import CharacterAvatar from '../components/CharacterAvatar'
 import BottomSheet from '../components/BottomSheet'
@@ -12,19 +12,30 @@ const MAX_SCENE = 200
 
 export default function NewChat() {
   const navigate = useNavigate()
+  const location = useLocation()
   const { user } = useAuth()
+  const { allCharacters, getCharacter } = useCharacters()
 
-  const [selectedIds, setSelectedIds] = useState([])
+  const preselectedId = location.state?.preselectedCharId
+  const [selectedIds, setSelectedIds] = useState(preselectedId ? [preselectedId] : [])
   const [groupName, setGroupName] = useState('')
   const [scene, setScene] = useState('')
   const [showPicker, setShowPicker] = useState(false)
   const [creating, setCreating] = useState(false)
 
-  const selectedChars = selectedIds.map(id => characters.find(c => c.id === id))
-  const available = characters.filter(c => !selectedIds.includes(c.id))
+  // Set initial group name if preselected
+  useEffect(() => {
+    if (preselectedId) {
+      const char = getCharacter(preselectedId)
+      if (char) setGroupName(char.name.split(' ')[0])
+    }
+  }, [])
+
+  const selectedChars = selectedIds.map(id => getCharacter(id)).filter(Boolean)
+  const available = allCharacters.filter(c => !selectedIds.includes(c.id))
 
   const autoName = (ids) => {
-    const names = ids.map(id => characters.find(c => c.id === id)?.name.split(' ')[0])
+    const names = ids.map(id => getCharacter(id)?.name.split(' ')[0]).filter(Boolean)
     return names.join(' × ')
   }
 

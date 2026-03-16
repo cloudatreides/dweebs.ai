@@ -1,6 +1,54 @@
 import { supabase } from './supabase'
 
 // ============================================
+// CUSTOM CHARACTERS
+// ============================================
+
+export async function getUserCustomCharacters(userId) {
+  const { data, error } = await supabase
+    .from('custom_characters')
+    .select('*')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false })
+
+  if (error) throw error
+  return data
+}
+
+export async function saveCustomCharacter({ userId, id, name, fandom, color, avatarUrl, tags, quote, bio, isPublic }) {
+  const { data, error } = await supabase
+    .from('custom_characters')
+    .insert({
+      id,
+      user_id: userId,
+      name,
+      fandom: fandom || 'Custom',
+      category: 'Custom',
+      color: color || '#A78BFA',
+      emoji: '🎤',
+      avatar_url: avatarUrl || null,
+      tags: tags || [],
+      quote: quote || '',
+      bio: bio || '',
+      is_public: isPublic ?? true,
+    })
+    .select()
+    .single()
+
+  if (error) throw error
+  return data
+}
+
+export async function deleteCustomCharacter(charId) {
+  const { error } = await supabase
+    .from('custom_characters')
+    .delete()
+    .eq('id', charId)
+
+  if (error) throw error
+}
+
+// ============================================
 // GROUP CHATS
 // ============================================
 

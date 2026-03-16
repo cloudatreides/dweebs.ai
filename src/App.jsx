@@ -17,8 +17,8 @@ export default function App() {
         <Route path="/login" element={<Login />} />
 
         {/* Protected app routes */}
-        <Route path="/home" element={<ProtectedRoute><AppLayout><MyWorlds /></AppLayout></ProtectedRoute>} />
-        <Route path="/discover" element={<ProtectedRoute><AppLayout><Discover /></AppLayout></ProtectedRoute>} />
+        <Route path="/home" element={<ProtectedRoute><AppLayout><Discover /></AppLayout></ProtectedRoute>} />
+        <Route path="/my-worlds" element={<ProtectedRoute><AppLayout><MyWorlds /></AppLayout></ProtectedRoute>} />
         <Route path="/new-chat" element={<ProtectedRoute><AppLayout><NewChat /></AppLayout></ProtectedRoute>} />
         <Route path="/chat/:id" element={<ProtectedRoute><AppLayout><ChatView /></AppLayout></ProtectedRoute>} />
         <Route path="/profile" element={<ProtectedRoute><AppLayout><MyWorlds /></AppLayout></ProtectedRoute>} />

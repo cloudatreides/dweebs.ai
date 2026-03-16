@@ -91,6 +91,45 @@ create policy "Users can delete own chats"
   on public.group_chats for delete
   using (auth.uid() = user_id);
 
+-- ============================================
+-- CUSTOM CHARACTERS
+-- ============================================
+create table public.custom_characters (
+  id text primary key,
+  user_id uuid references public.profiles(id) on delete cascade not null,
+  name text not null,
+  fandom text default 'Custom',
+  category text default 'Custom',
+  color text default '#A78BFA',
+  emoji text default '🎤',
+  avatar_url text,
+  tags text[] not null default '{}',
+  quote text default '',
+  bio text default '',
+  is_public boolean default true,
+  created_at timestamptz not null default now()
+);
+
+create index idx_custom_characters_user on public.custom_characters(user_id);
+
+alter table public.custom_characters enable row level security;
+
+create policy "Users can view own custom characters"
+  on public.custom_characters for select
+  using (auth.uid() = user_id);
+
+create policy "Users can create custom characters"
+  on public.custom_characters for insert
+  with check (auth.uid() = user_id);
+
+create policy "Users can update own custom characters"
+  on public.custom_characters for update
+  using (auth.uid() = user_id);
+
+create policy "Users can delete own custom characters"
+  on public.custom_characters for delete
+  using (auth.uid() = user_id);
+
 -- Messages: users can CRUD messages in their own chats
 alter table public.messages enable row level security;
 

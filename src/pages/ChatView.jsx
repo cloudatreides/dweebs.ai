@@ -2,18 +2,18 @@ import { useState, useEffect, useRef } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ArrowUp, Pause, ChevronLeft, Plus } from 'lucide-react'
-import { characters } from '../data/mockData'
 import { getResponse } from '../data/mockResponses'
 import { getCharacterResponses } from '../lib/chatApi'
 import { getChat, getChatMessages, addMessage, addMessages, updateChat } from '../lib/db'
+import { useCharacters } from '../context/CharacterContext'
 import BottomSheet from '../components/BottomSheet'
 import CharacterAvatar from '../components/CharacterAvatar'
 
 // Parse @mentions from message text — returns characterId or null
-function parseMention(text, charIds) {
+function parseMention(text, charIds, getCharacter) {
   const lower = text.toLowerCase()
   for (const id of charIds) {
-    const char = characters.find(c => c.id === id)
+    const char = getCharacter(id)
     if (!char) continue
     const firstName = char.name.split(' ')[0].toLowerCase()
     if (lower.includes(`@${firstName}`) || lower.includes(`@${id}`)) return id
@@ -33,6 +33,7 @@ function renderWithMentions(text) {
 export default function ChatView() {
   const { id } = useParams()
   const navigate = useNavigate()
+  const { getCharacter, allCharacters } = useCharacters()
   const bottomRef = useRef(null)
   const inputRef = useRef(null)
 
@@ -56,13 +57,19 @@ export default function ChatView() {
         ])
         setChat(chatData)
         setChatCharIds(chatData.character_ids)
-        setMessages(messagesData.map(m => ({
+        const mapped = messagesData.map(m => ({
           id: m.id,
           type: m.sender_type,
           characterId: m.sender_id,
           text: m.content,
           timestamp: m.created_at,
-        })))
+        }))
+        setMessages(mapped)
+
+        // First time opening a new chat — characters greet the user
+        if (mapped.length === 0 && chatData.character_ids.length > 0) {
+          generateGreetings(chatData)
+        }
       } catch (err) {
         console.error('Failed to load chat:', err)
         navigate('/home')
@@ -73,9 +80,38 @@ export default function ChatView() {
     load()
   }, [id])
 
+  async function generateGreetings(chatData) {
+    const chars = chatData.character_ids.map(cid => getCharacter(cid)).filter(Boolean)
+
+    for (let i = 0; i < chars.length; i++) {
+      const char = chars[i]
+      setTypingChar(char)
+      await delay(800 + Math.random() * 600)
+      setTypingChar(null)
+
+      const greeting = getGreeting(char, chatData.scene)
+      const saved = await addMessage({
+        groupChatId: chatData.id,
+        senderType: 'character',
+        senderId: char.id,
+        content: greeting,
+      })
+
+      setMessages(prev => [...prev, {
+        id: saved.id,
+        type: 'character',
+        characterId: char.id,
+        text: greeting,
+        timestamp: 'now',
+      }])
+
+      if (i < chars.length - 1) await delay(400)
+    }
+  }
+
   const isSolo = chat && chatCharIds.length === 1
-  const chatCharacters = chatCharIds.map(cid => characters.find(c => c.id === cid)).filter(Boolean)
-  const availableToAdd = characters.filter(c => !chatCharIds.includes(c.id))
+  const chatCharacters = chatCharIds.map(cid => getCharacter(cid)).filter(Boolean)
+  const availableToAdd = allCharacters.filter(c => !chatCharIds.includes(c.id))
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -126,7 +162,7 @@ export default function ChatView() {
       m.id === tempUserMsg.id ? { ...m, id: savedUserMsg.id } : m
     ))
 
-    const mentionedId = parseMention(text, chatCharIds)
+    const mentionedId = parseMention(text, chatCharIds, getCharacter)
     const respondingChars = mentionedId
       ? chatCharacters.filter(c => c.id === mentionedId)
       : chatCharacters
@@ -201,7 +237,7 @@ export default function ChatView() {
   }
 
   const handleAddCharacter = async (charId) => {
-    const char = characters.find(c => c.id === charId)
+    const char = getCharacter(charId)
     const newIds = [...chatCharIds, charId]
     setChatCharIds(newIds)
     setShowAddSheet(false)
@@ -311,7 +347,7 @@ export default function ChatView() {
 
               {/* Character message */}
               {msg.type === 'character' && (() => {
-                const char = characters.find(c => c.id === msg.characterId)
+                const char = getCharacter(msg.characterId)
                 return char ? (
                   <div className="flex flex-col gap-1 max-w-[78%]">
                     <div className="flex items-center gap-1.5">
@@ -534,4 +570,91 @@ function UpgradeModal({ onClose }) {
 
 function delay(ms) {
   return new Promise(resolve => setTimeout(resolve, ms))
+}
+
+const GREETINGS = {
+  miku: [
+    "Hey hey~ Welcome to our world! I've been warming up my voice just for this moment 🎵",
+    "You're here! The stage is set and the lights are on — let's make some magic together ✨",
+    "Finally! I had a feeling someone amazing was about to join. Ready to create something beautiful? 🎶",
+  ],
+  ariana: [
+    "Omg hiiii! Okay this is about to be so fun, I can already tell 🌹",
+    "Welcome babe! Get comfy because we're about to have the BEST time 💕",
+    "Yesss you're here! I was just thinking about what we should talk about first 🎤",
+  ],
+  taylor: [
+    "Well, well, well... a new chapter begins. I love a good opening line ✨",
+    "Hi! I've been writing in my journal waiting for this moment. Story starts now 🪶",
+    "Welcome to the era you didn't know you needed. I have a feeling this is going to be good ✨",
+  ],
+  jungkook: [
+    "Oh! You're here! I was just practising — welcome, welcome 💫",
+    "Hey! I'm a little nervous but also excited. Let's have a great time together 🐰",
+    "Welcome! I promise to give you everything I've got. That's just how I am ✨",
+  ],
+  naruto: [
+    "YOOO you made it!! Believe it — this is gonna be legendary, dattebayo! 💪",
+    "Hey hey hey! Finally someone cool shows up! Let's do this! 🍥",
+    "Welcome to the squad! I've been training all day for this moment. Believe it! 🌟",
+  ],
+  luffy: [
+    "MEAT!! Oh wait, a new person! Even better! Welcome aboard! 🏴‍☠️",
+    "Hey!! You look fun! Wanna join my crew? We're going on an adventure! 🎉",
+    "Shishishi! Welcome! I can tell you're gonna be awesome! 🏴‍☠️",
+  ],
+  goku: [
+    "Hey! My energy just spiked — you must be strong! Welcome! ⚡",
+    "Alright! A new challenger! Wait, we're just chatting? That's cool too! 🔥",
+    "Hi there! I can sense good energy from you. This is gonna be fun! ⚡",
+  ],
+  levi: [
+    "You're here. Good. Don't waste my time and we'll get along fine. ⚔️",
+    "Tch. Another one. ...Fine. Welcome. Just keep things clean.",
+    "I don't do small talk. But I'll make an exception. Welcome. ⚔️",
+  ],
+  itachi: [
+    "You've arrived. I had a feeling our paths would cross. 🌙",
+    "Welcome. Every meeting has a purpose — let's discover ours. 🌙",
+    "So you're here. Interesting. I don't believe in coincidences.",
+  ],
+  jimin: [
+    "Oh hi! I'm so glad you're here — I was hoping for some company 🌸",
+    "Welcome! Let's make this moment something warm and special 🌸",
+    "You came! I could feel it. Something good is about to happen 🌸",
+  ],
+  billie: [
+    "Oh. You showed up. Cool. Let's make this weird in the best way 😈",
+    "Hey. Welcome to the dark side. ...Just kidding. Kind of. 🕷️",
+    "Sup. I don't do fake excitement but I'm genuinely glad you're here 😈",
+  ],
+  zoro: [
+    "Hm. You found this place faster than I would've. Welcome. ⚔️",
+    "Oh, someone new. I was napping. ...Welcome. Don't get lost. 🗡️",
+    "You look alright. Stick around. Things might get interesting. ⚔️",
+  ],
+  sabrina: [
+    "Please please please tell me you're ready for a good time ☀️",
+    "Hi! Oh wow, okay, this is happening. I already like the energy in here ☀️",
+    "Welcome! Fair warning: I'm funny AND emotional. You've been warned ☀️",
+  ],
+  dua: [
+    "Hey! New rules: we have fun, we stay real, and we don't look back 💜",
+    "Welcome! The vibe just shifted — in a good way. Let's go 💜",
+    "You're here! Perfect timing. I was just getting started 💜",
+  ],
+}
+
+function getGreeting(char, scene) {
+  const pool = GREETINGS[char.id]
+  if (pool) {
+    return pool[Math.floor(Math.random() * pool.length)]
+  }
+  // Fallback for characters without custom greetings
+  const fallbacks = [
+    `Hey! Welcome — I'm ${char.name.split(' ')[0]} and I'm excited to chat with you!`,
+    `You're here! I'm ${char.name.split(' ')[0]}. Let's have a great time together.`,
+    `Welcome! I'm ${char.name.split(' ')[0]} — ready whenever you are.`,
+  ]
+  return fallbacks[Math.floor(Math.random() * fallbacks.length)]
 }
