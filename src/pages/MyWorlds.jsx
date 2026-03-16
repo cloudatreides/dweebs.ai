@@ -1,22 +1,63 @@
+import { useState, useEffect } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { Bell, Plus, Sparkles } from 'lucide-react'
-import { mockChats, characters } from '../data/mockData'
+import { Bell, Plus, Sparkles, LogOut } from 'lucide-react'
+import { characters } from '../data/mockData'
+import { useAuth } from '../context/AuthContext'
+import { getUserChats } from '../lib/db'
 import BottomNav from '../components/BottomNav'
 
 export default function MyWorlds() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
+  const { user, profile, signOut } = useAuth()
   const isEmpty = searchParams.get('empty') === '1'
 
-  const getChars = (ids) => ids.map(id => characters.find(c => c.id === id))
+  const [chats, setChats] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    if (!user) return
+    getUserChats(user.id)
+      .then(data => setChats(data))
+      .catch(err => console.error('Failed to load chats:', err))
+      .finally(() => setLoading(false))
+  }, [user])
+
+  const getChars = (ids) => ids.map(id => characters.find(c => c.id === id)).filter(Boolean)
+
+  const handleSignOut = async () => {
+    await signOut()
+    navigate('/')
+  }
+
+  const formatTime = (dateStr) => {
+    const date = new Date(dateStr)
+    const now = new Date()
+    const diffMs = now - date
+    const diffMins = Math.floor(diffMs / 60000)
+    if (diffMins < 1) return 'Just now'
+    if (diffMins < 60) return `${diffMins}m ago`
+    const diffHours = Math.floor(diffMins / 60)
+    if (diffHours < 24) return `${diffHours}h ago`
+    const diffDays = Math.floor(diffHours / 24)
+    if (diffDays === 1) return 'Yesterday'
+    return `${diffDays}d ago`
+  }
 
   return (
     <div className="flex flex-col min-h-dvh md:h-dvh md:overflow-y-auto pb-24 md:pb-8" style={{ background: '#0D0D0F' }}>
       {/* Header */}
       <div className="flex items-center justify-between px-5 pt-12 md:pt-8 pb-4">
-        <h1 className="text-xl font-bold text-white">My Worlds</h1>
+        <div>
+          <h1 className="text-xl font-bold text-white">My Worlds</h1>
+          {profile && (
+            <p className="text-xs mt-0.5" style={{ color: '#6B7280' }}>{profile.display_name}</p>
+          )}
+        </div>
         <div className="flex items-center gap-3">
-          <button><Bell size={20} color="#6B7280" /></button>
+          <button onClick={handleSignOut} title="Sign out">
+            <LogOut size={18} color="#6B7280" />
+          </button>
           <button
             onClick={() => navigate('/new-chat')}
             className="flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-semibold text-white"
@@ -27,7 +68,11 @@ export default function MyWorlds() {
         </div>
       </div>
 
-      {isEmpty || mockChats.length === 0 ? (
+      {loading ? (
+        <div className="flex-1 flex items-center justify-center">
+          <div className="w-8 h-8 border-2 border-t-transparent rounded-full animate-spin" style={{ borderColor: '#7C3AED', borderTopColor: 'transparent' }} />
+        </div>
+      ) : isEmpty || chats.length === 0 ? (
         /* Empty State */
         <div className="flex-1 flex flex-col items-center justify-center px-8 text-center gap-4">
           <div className="w-16 h-16 rounded-full flex items-center justify-center" style={{ background: '#1A1A1F' }}>
@@ -48,8 +93,8 @@ export default function MyWorlds() {
       ) : (
         /* Chat List */
         <div className="flex flex-col gap-2 px-5">
-          {mockChats.map((chat) => {
-            const chars = getChars(chat.characterIds)
+          {chats.map((chat) => {
+            const chars = getChars(chat.character_ids)
             return (
               <button
                 key={chat.id}
@@ -73,22 +118,15 @@ export default function MyWorlds() {
 
                 {/* Info */}
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <span className="font-semibold text-sm text-white truncate">{chat.name}</span>
-                    {chat.isLive && (
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full flex-shrink-0" style={{ background: '#22C55E22', color: '#22C55E', border: '1px solid #22C55E44' }}>
-                        LIVE
-                      </span>
-                    )}
-                  </div>
+                  <span className="font-semibold text-sm text-white truncate block">{chat.name}</span>
                   <p className="text-xs truncate mt-0.5" style={{ color: '#6B7280' }}>
-                    {chat.lastMessage}
+                    {chars.map(c => c.name.split(' ')[0]).join(', ')}
                   </p>
                 </div>
 
                 {/* Timestamp */}
                 <span className="text-[11px] flex-shrink-0" style={{ color: '#4B5563' }}>
-                  {chat.timestamp}
+                  {formatTime(chat.updated_at)}
                 </span>
               </button>
             )

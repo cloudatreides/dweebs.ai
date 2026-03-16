@@ -2,6 +2,7 @@ import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { characters } from '../data/mockData'
 import { useEffect, useState, useRef } from 'react'
+import { useAuth } from '../context/AuthContext'
 
 const fadeUp = {
   hidden: { opacity: 0, y: 24 },
@@ -198,6 +199,9 @@ function CharacterCarousel() {
 
 export default function Landing() {
   const navigate = useNavigate()
+  const { user } = useAuth()
+
+  const handleCTA = () => navigate(user ? '/home' : '/login')
 
   return (
     <div style={{ background: '#0D0D0F', minHeight: '100dvh' }}>
@@ -234,7 +238,7 @@ export default function Landing() {
             </motion.div>
 
             <motion.div variants={fadeUp} className="flex flex-col gap-3 md:flex-row md:gap-4">
-              <button onClick={() => navigate('/home')}
+              <button onClick={handleCTA}
                 className="md:flex-1 py-4 rounded-full font-semibold text-white text-[15px]"
                 style={{ background: '#7C3AED' }}>
                 Build Your World →
@@ -369,7 +373,7 @@ export default function Landing() {
             Free to start. No credit card. Just pick your characters.
           </motion.p>
           <motion.button variants={fadeUp}
-            onClick={() => navigate('/home')}
+            onClick={handleCTA}
             className="w-full py-4 rounded-full font-semibold text-white text-[15px]"
             style={{ background: '#7C3AED' }}>
             Build Your World →

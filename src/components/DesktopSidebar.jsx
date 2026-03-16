@@ -1,12 +1,25 @@
+import { useState, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { Compass, Plus, User } from 'lucide-react'
-import { mockChats, characters } from '../data/mockData'
+import { characters } from '../data/mockData'
+import { useAuth } from '../context/AuthContext'
+import { getUserChats } from '../lib/db'
 
 export default function DesktopSidebar() {
   const navigate = useNavigate()
   const location = useLocation()
+  const { user } = useAuth()
   const path = location.pathname
   const isActive = (route) => path === route || path.startsWith(route + '/')
+
+  const [chats, setChats] = useState([])
+
+  useEffect(() => {
+    if (!user) return
+    getUserChats(user.id)
+      .then(data => setChats(data))
+      .catch(err => console.error('Sidebar: failed to load chats:', err))
+  }, [user, path]) // refetch when navigating (e.g. after creating a new chat)
 
   return (
     <div className="flex flex-col h-full w-full" style={{
@@ -63,8 +76,8 @@ export default function DesktopSidebar() {
           My Worlds
         </p>
         <div className="flex flex-col gap-0.5">
-          {mockChats.map(chat => {
-            const chars = chat.characterIds.map(id => characters.find(c => c.id === id)).filter(Boolean)
+          {chats.map(chat => {
+            const chars = (chat.character_ids || []).map(id => characters.find(c => c.id === id)).filter(Boolean)
             const active = path === `/chat/${chat.id}`
             return (
               <button
@@ -95,16 +108,11 @@ export default function DesktopSidebar() {
                 </div>
 
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <p className="text-sm font-medium truncate" style={{ color: active ? '#A78BFA' : '#E5E7EB' }}>
-                      {chat.name}
-                    </p>
-                    {chat.isLive && (
-                      <span className="text-[10px] font-bold flex-shrink-0" style={{ color: '#22C55E' }}>LIVE</span>
-                    )}
-                  </div>
+                  <p className="text-sm font-medium truncate" style={{ color: active ? '#A78BFA' : '#E5E7EB' }}>
+                    {chat.name}
+                  </p>
                   <p className="text-xs truncate" style={{ color: '#4B5563' }}>
-                    {chat.lastMessage?.slice(0, 28)}…
+                    {chars.map(c => c.name.split(' ')[0]).join(', ')}
                   </p>
                 </div>
               </button>

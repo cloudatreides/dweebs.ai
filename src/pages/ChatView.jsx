@@ -1,10 +1,11 @@
 import { useState, useEffect, useRef } from 'react'
-import { useNavigate, useParams, useLocation } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ArrowUp, Pause, ChevronLeft, Plus } from 'lucide-react'
-import { mockChats, characters, seedMessages } from '../data/mockData'
+import { characters } from '../data/mockData'
 import { getResponse } from '../data/mockResponses'
 import { getCharacterResponses } from '../lib/chatApi'
+import { getChat, getChatMessages, addMessage, addMessages, updateChat } from '../lib/db'
 import BottomSheet from '../components/BottomSheet'
 import CharacterAvatar from '../components/CharacterAvatar'
 
@@ -32,28 +33,47 @@ function renderWithMentions(text) {
 export default function ChatView() {
   const { id } = useParams()
   const navigate = useNavigate()
-  const location = useLocation()
   const bottomRef = useRef(null)
   const inputRef = useRef(null)
 
-  const chat = location.state?.chat || mockChats.find(c => c.id === id) || {
-    id: 'solo-miku',
-    name: 'Miku',
-    characterIds: ['miku'],
-    scene: 'A solo chat with Hatsune Miku.',
-    isSolo: true,
-  }
-
-  const isSolo = chat.isSolo || chat.characterIds.length === 1
-
-  const [messages, setMessages] = useState(() => seedMessages[id] || [])
+  const [chat, setChat] = useState(null)
+  const [messages, setMessages] = useState([])
   const [input, setInput] = useState('')
   const [typingChar, setTypingChar] = useState(null)
   const [showAddSheet, setShowAddSheet] = useState(false)
   const [showUpgradeModal, setShowUpgradeModal] = useState(false)
-  const [chatCharIds, setChatCharIds] = useState(chat.characterIds)
+  const [chatCharIds, setChatCharIds] = useState([])
   const [mentionSuggestions, setMentionSuggestions] = useState([])
+  const [loading, setLoading] = useState(true)
 
+  // Load chat + messages from Supabase
+  useEffect(() => {
+    async function load() {
+      try {
+        const [chatData, messagesData] = await Promise.all([
+          getChat(id),
+          getChatMessages(id),
+        ])
+        setChat(chatData)
+        setChatCharIds(chatData.character_ids)
+        setMessages(messagesData.map(m => ({
+          id: m.id,
+          type: m.sender_type,
+          characterId: m.sender_id,
+          text: m.content,
+          timestamp: m.created_at,
+        })))
+      } catch (err) {
+        console.error('Failed to load chat:', err)
+        navigate('/home')
+      } finally {
+        setLoading(false)
+      }
+    }
+    load()
+  }, [id])
+
+  const isSolo = chat && chatCharIds.length === 1
   const chatCharacters = chatCharIds.map(cid => characters.find(c => c.id === cid)).filter(Boolean)
   const availableToAdd = characters.filter(c => !chatCharIds.includes(c.id))
 
@@ -86,30 +106,55 @@ export default function ChatView() {
   const sendMessage = async () => {
     if (!input.trim() || typingChar) return
     const text = input.trim()
-    const userMsg = { id: Date.now(), type: 'user', text, timestamp: 'now' }
-    const updatedMessages = [...messages, userMsg]
-    setMessages(updatedMessages)
+
+    // Optimistic UI update
+    const tempUserMsg = { id: 'temp-' + Date.now(), type: 'user', text, timestamp: 'now' }
+    setMessages(prev => [...prev, tempUserMsg])
     setInput('')
     setMentionSuggestions([])
+
+    // Persist user message to Supabase
+    const savedUserMsg = await addMessage({
+      groupChatId: id,
+      senderType: 'user',
+      senderId: null,
+      content: text,
+    })
+
+    // Replace temp message with saved one
+    setMessages(prev => prev.map(m =>
+      m.id === tempUserMsg.id ? { ...m, id: savedUserMsg.id } : m
+    ))
 
     const mentionedId = parseMention(text, chatCharIds)
     const respondingChars = mentionedId
       ? chatCharacters.filter(c => c.id === mentionedId)
       : chatCharacters
 
-    // Show typing indicator on first responding character immediately
+    // Build message history for API
+    const currentMessages = [...messages, { type: 'user', text }]
+
+    // Show typing indicator
     setTypingChar(respondingChars[0])
 
     try {
-      // One API call — returns all responses
       const responses = await getCharacterResponses({
         characters: chatCharacters,
         scene: chat.scene,
-        messages: updatedMessages,
+        messages: currentMessages,
         mentionedId,
       })
 
-      // Reveal each character's response one at a time
+      // Persist all character responses
+      const dbMessages = responses.map(r => ({
+        group_chat_id: id,
+        sender_type: 'character',
+        sender_id: r.characterId,
+        content: r.text,
+      }))
+      const savedResponses = await addMessages(dbMessages)
+
+      // Reveal each response with animation
       for (let i = 0; i < responses.length; i++) {
         const { characterId, text: responseText } = responses[i]
         const char = chatCharacters.find(c => c.id === characterId)
@@ -118,7 +163,7 @@ export default function ChatView() {
         await delay(600)
         setTypingChar(null)
         setMessages(prev => [...prev, {
-          id: Date.now() + i, type: 'character', characterId, text: responseText, timestamp: 'now'
+          id: savedResponses[i].id, type: 'character', characterId, text: responseText, timestamp: 'now'
         }])
         if (i < responses.length - 1) {
           setTypingChar(chatCharacters.find(c => c.id === responses[i + 1].characterId) || null)
@@ -126,7 +171,6 @@ export default function ChatView() {
       }
     } catch (err) {
       console.warn('API call failed, using mock response:', err.message)
-      // Fallback to mock responses
       setTypingChar(null)
       for (let i = 0; i < respondingChars.length; i++) {
         const char = respondingChars[i]
@@ -134,9 +178,16 @@ export default function ChatView() {
         setTypingChar(char)
         await delay(1400)
         setTypingChar(null)
+        const mockText = getResponse(char.id)
+        const saved = await addMessage({
+          groupChatId: id,
+          senderType: 'character',
+          senderId: char.id,
+          content: mockText,
+        })
         setMessages(prev => [...prev, {
-          id: Date.now() + i, type: 'character', characterId: char.id,
-          text: randomResponse(char.id), timestamp: 'now'
+          id: saved.id, type: 'character', characterId: char.id,
+          text: mockText, timestamp: 'now'
         }])
       }
     }
@@ -149,14 +200,33 @@ export default function ChatView() {
     }
   }
 
-  const handleAddCharacter = (charId) => {
+  const handleAddCharacter = async (charId) => {
     const char = characters.find(c => c.id === charId)
-    setChatCharIds(prev => [...prev, charId])
+    const newIds = [...chatCharIds, charId]
+    setChatCharIds(newIds)
     setShowAddSheet(false)
-    // System message: "[Name] has joined"
+
+    // Persist updated character list
+    await updateChat(id, { character_ids: newIds })
+
+    // System message
+    const saved = await addMessage({
+      groupChatId: id,
+      senderType: 'system',
+      senderId: null,
+      content: `${char.name} has joined the chat`,
+    })
     setMessages(prev => [...prev, {
-      id: Date.now(), type: 'system', text: `${char.name} has joined the chat`, timestamp: 'now'
+      id: saved.id, type: 'system', text: `${char.name} has joined the chat`, timestamp: 'now'
     }])
+  }
+
+  if (loading || !chat) {
+    return (
+      <div className="flex items-center justify-center h-dvh" style={{ background: '#0D0D0F' }}>
+        <div className="w-8 h-8 border-2 border-t-transparent rounded-full animate-spin" style={{ borderColor: '#7C3AED', borderTopColor: 'transparent' }} />
+      </div>
+    )
   }
 
   const subtitle = isSolo
@@ -167,7 +237,7 @@ export default function ChatView() {
     <div className="flex flex-col h-dvh" style={{ background: '#0D0D0F' }}>
       {/* Header */}
       <div className="flex items-center gap-3 px-4 pt-12 md:pt-4 pb-3 flex-shrink-0" style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-        <button onClick={() => navigate(-1)}>
+        <button onClick={() => navigate('/home')}>
           <ChevronLeft size={22} color="#9CA3AF" />
         </button>
         {/* Avatar cluster */}
@@ -213,10 +283,10 @@ export default function ChatView() {
       </div>
 
       {/* Scene badge */}
-      {!isSolo && (
+      {!isSolo && chat.scene && (
         <div className="flex justify-center px-4 py-2 flex-shrink-0">
           <span className="text-xs px-3 py-1 rounded-full" style={{ background: '#7C3AED22', color: '#A78BFA', border: '1px solid #7C3AED44' }}>
-            ✦ {chat.scene ? chat.scene.slice(0, 60) + (chat.scene.length > 60 ? '…' : '') : chat.name}
+            ✦ {chat.scene.slice(0, 60) + (chat.scene.length > 60 ? '…' : '')}
           </span>
         </div>
       )}
@@ -464,8 +534,4 @@ function UpgradeModal({ onClose }) {
 
 function delay(ms) {
   return new Promise(resolve => setTimeout(resolve, ms))
-}
-
-function randomResponse(characterId) {
-  return getResponse(characterId)
 }

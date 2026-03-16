@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom'
 import { ChevronLeft, Plus, X, Sparkles } from 'lucide-react'
 import { characters } from '../data/mockData'
 import { SCENE_TEMPLATES } from '../data/sceneTemplates'
+import { useAuth } from '../context/AuthContext'
+import { createChat } from '../lib/db'
 import CharacterAvatar from '../components/CharacterAvatar'
 import BottomSheet from '../components/BottomSheet'
 
@@ -10,11 +12,13 @@ const MAX_SCENE = 200
 
 export default function NewChat() {
   const navigate = useNavigate()
+  const { user } = useAuth()
 
   const [selectedIds, setSelectedIds] = useState([])
   const [groupName, setGroupName] = useState('')
   const [scene, setScene] = useState('')
   const [showPicker, setShowPicker] = useState(false)
+  const [creating, setCreating] = useState(false)
 
   const selectedChars = selectedIds.map(id => characters.find(c => c.id === id))
   const available = characters.filter(c => !selectedIds.includes(c.id))
@@ -44,21 +48,27 @@ export default function NewChat() {
     names.forEach((name, i) => {
       result = result.replace(new RegExp(`\\{char${i + 1}\\}`, 'g'), name)
     })
-    // Fill any unreplaced placeholders with the last available name
     result = result.replace(/\{char\d\}/g, names[names.length - 1] || '')
     setScene(result.slice(0, MAX_SCENE))
   }
 
   const canStart = selectedIds.length >= 1
 
-  const handleStart = () => {
-    const newChat = {
-      id: `chat-${Date.now()}`,
-      name: groupName || autoName(selectedIds),
-      characterIds: selectedIds,
-      scene: scene || '',
+  const handleStart = async () => {
+    if (creating) return
+    setCreating(true)
+    try {
+      const newChat = await createChat({
+        userId: user.id,
+        name: groupName || autoName(selectedIds),
+        scene: scene || '',
+        characterIds: selectedIds,
+      })
+      navigate(`/chat/${newChat.id}`)
+    } catch (err) {
+      console.error('Failed to create chat:', err)
+      setCreating(false)
     }
-    navigate(`/chat/${newChat.id}`, { state: { chat: newChat } })
   }
 
   return (
@@ -172,11 +182,11 @@ export default function NewChat() {
       <div className="px-5 pb-8 pt-3" style={{ borderTop: '1px solid rgba(255,255,255,0.04)' }}>
         <button
           onClick={handleStart}
-          disabled={!canStart}
+          disabled={!canStart || creating}
           className="w-full py-4 rounded-full font-semibold text-white text-[15px] transition-opacity"
-          style={{ background: '#7C3AED', opacity: canStart ? 1 : 0.4 }}
+          style={{ background: '#7C3AED', opacity: (canStart && !creating) ? 1 : 0.4 }}
         >
-          Start Chatting →
+          {creating ? 'Creating...' : 'Start Chatting →'}
         </button>
       </div>
 
