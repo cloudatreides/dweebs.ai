@@ -39,13 +39,23 @@ export function AuthProvider({ children }) {
   }, [])
 
   async function fetchProfile(userId) {
-    const { data } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', userId)
-      .single()
-    setProfile(data)
-    setLoading(false)
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single()
+
+      if (error) {
+        console.warn('Profile fetch failed:', error.message)
+        // Profile might not exist yet (trigger delay) — continue without it
+      }
+      setProfile(data || null)
+    } catch (err) {
+      console.warn('Profile fetch error:', err)
+    } finally {
+      setLoading(false)
+    }
   }
 
   async function signInWithGoogle() {
