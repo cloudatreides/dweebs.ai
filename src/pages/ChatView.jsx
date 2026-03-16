@@ -1,9 +1,9 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ArrowUp, Pause, ChevronLeft, Plus } from 'lucide-react'
+import { ArrowUp, Pause, ChevronLeft, Plus, Play } from 'lucide-react'
 import { getResponse } from '../data/mockResponses'
-import { getCharacterResponses, generateCatchUpMessages, generateNudgeMessage } from '../lib/chatApi'
+import { getCharacterResponses, generateCatchUpMessages, generateNudgeMessage, generateKeepGoing } from '../lib/chatApi'
 import { getChat, getChatMessages, addMessage, addMessages, updateChat } from '../lib/db'
 import { useCharacters } from '../context/CharacterContext'
 import BottomSheet from '../components/BottomSheet'
@@ -45,6 +45,8 @@ export default function ChatView() {
   const [showUpgradeModal, setShowUpgradeModal] = useState(false)
   const [chatCharIds, setChatCharIds] = useState([])
   const [mentionSuggestions, setMentionSuggestions] = useState([])
+  const [promptSuggestions, setPromptSuggestions] = useState([])
+  const [keepGoingActive, setKeepGoingActive] = useState(false)
   const [loading, setLoading] = useState(true)
 
   // Load chat + messages from Supabase
@@ -284,6 +286,7 @@ export default function ChatView() {
     setMessages(prev => [...prev, tempUserMsg])
     setInput('')
     setMentionSuggestions([])
+    setPromptSuggestions([])
 
     // Persist user message to Supabase
     const savedUserMsg = await addMessage({
@@ -310,7 +313,7 @@ export default function ChatView() {
     setTypingChar(respondingChars[0])
 
     try {
-      const responses = await getCharacterResponses({
+      const { responses, suggestions } = await getCharacterResponses({
         characters: chatCharacters,
         scene: chat.scene,
         messages: currentMessages,
@@ -341,6 +344,8 @@ export default function ChatView() {
           setTypingChar(chatCharacters.find(c => c.id === responses[i + 1].characterId) || null)
         }
       }
+      // Show conversation suggestions
+      if (suggestions?.length > 0) setPromptSuggestions(suggestions)
     } catch (err) {
       console.warn('API call failed, using mock response:', err.message)
       setTypingChar(null)
@@ -363,6 +368,70 @@ export default function ChatView() {
         }])
       }
     }
+  }
+
+  const KEEP_GOING_COOLDOWN = 3 * 60 * 60 * 1000 // 3 hours
+
+  const getKeepGoingCooldown = () => {
+    const stored = localStorage.getItem(`keepgoing-${id}`)
+    if (!stored) return null
+    const expiry = parseInt(stored, 10)
+    return Date.now() < expiry ? expiry : null
+  }
+
+  const canKeepGoing = chatCharIds.length >= 2 && !typingChar && !keepGoingActive && !getKeepGoingCooldown()
+
+  const handleKeepGoing = async () => {
+    if (!canKeepGoing) return
+    setKeepGoingActive(true)
+    setPromptSuggestions([])
+
+    const chars = chatCharIds.map(cid => getCharacter(cid)).filter(Boolean)
+
+    try {
+      const responses = await generateKeepGoing({
+        characters: chars,
+        scene: chat.scene,
+        recentMessages: messages,
+      })
+
+      if (responses.length === 0) { setKeepGoingActive(false); return }
+
+      for (let i = 0; i < responses.length; i++) {
+        const { characterId, text } = responses[i]
+        const char = chars.find(c => c.id === characterId)
+
+        setTypingChar(char || null)
+        await delay(600 + Math.random() * 500)
+        setTypingChar(null)
+
+        const saved = await addMessage({
+          groupChatId: id,
+          senderType: 'character',
+          senderId: characterId,
+          content: text,
+        })
+
+        setMessages(prev => [...prev, {
+          id: saved.id, type: 'character', characterId, text, timestamp: saved.created_at,
+        }])
+
+        if (i < responses.length - 1) await delay(300)
+      }
+
+      // Set cooldown
+      localStorage.setItem(`keepgoing-${id}`, String(Date.now() + KEEP_GOING_COOLDOWN))
+    } catch (err) {
+      console.warn('Keep going failed:', err.message)
+    } finally {
+      setKeepGoingActive(false)
+    }
+  }
+
+  const handleSuggestionTap = (text) => {
+    setInput(text)
+    setPromptSuggestions([])
+    inputRef.current?.focus()
   }
 
   const handleKeyDown = (e) => {
@@ -610,6 +679,39 @@ export default function ChatView() {
                 </div>
               </button>
             ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Suggestion chips + Keep It Going */}
+      <AnimatePresence>
+        {(promptSuggestions.length > 0 || canKeepGoing) && !typingChar && !keepGoingActive && (
+          <motion.div
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 6 }}
+            className="px-4 pt-2 pb-1 flex flex-wrap gap-2 flex-shrink-0"
+          >
+            {promptSuggestions.map((s, i) => (
+              <button
+                key={i}
+                onClick={() => handleSuggestionTap(s)}
+                className="text-xs px-3 py-1.5 rounded-full transition-all hover:opacity-80"
+                style={{ background: '#1A1A1F', color: '#9CA3AF', border: '1px solid rgba(255,255,255,0.08)' }}
+              >
+                {s}
+              </button>
+            ))}
+            {canKeepGoing && (
+              <button
+                onClick={handleKeepGoing}
+                className="text-xs px-3 py-1.5 rounded-full transition-all hover:opacity-80 flex items-center gap-1.5"
+                style={{ background: '#7C3AED22', color: '#A78BFA', border: '1px solid #7C3AED44' }}
+              >
+                <Play size={10} fill="#A78BFA" />
+                Keep It Going
+              </button>
+            )}
           </motion.div>
         )}
       </AnimatePresence>

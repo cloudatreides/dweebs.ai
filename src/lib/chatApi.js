@@ -45,8 +45,9 @@ RULES:
 5. Don't be sycophantic. Characters can disagree with the user or each other. Not every message needs to be supportive.
 6. Only these characters respond this turn: ${respondingNames}
 
-FORMAT — respond with EXACTLY this format, one line per character, no extra text:
-${respondingChars.map(c => `${label(c)}: [their response]`).join('\n')}`
+FORMAT — respond with EXACTLY this format, one line per character, then suggestions:
+${respondingChars.map(c => `${label(c)}: [their response]`).join('\n')}
+SUGGESTIONS: [3 short conversation prompts the user could say next, separated by |]`
 
   const history = messages
     .slice(-16)
@@ -66,7 +67,9 @@ ${respondingChars.map(c => `${label(c)}: [their response]`).join('\n')}`
     : 'The chat just started. Each character should say something natural to kick things off.'
 
   const raw = await callWithFallback(systemPrompt, userContent)
-  return parseResponses(raw, respondingChars)
+  const responses = parseResponses(raw, respondingChars)
+  const suggestions = parseSuggestions(raw)
+  return { responses, suggestions }
 }
 
 /**
@@ -220,6 +223,17 @@ function cleanResponse(text) {
   return cleaned.trim()
 }
 
+/** Parse suggestion chips from the SUGGESTIONS: line */
+function parseSuggestions(raw) {
+  const match = raw.match(/SUGGESTIONS:\s*(.+)/i)
+  if (!match) return []
+  return match[1]
+    .split('|')
+    .map(s => s.trim().replace(/^\[|\]$/g, '').trim())
+    .filter(s => s.length > 0 && s.length < 80)
+    .slice(0, 3)
+}
+
 /** Escape special regex characters in a string */
 function escapeRegex(str) {
   return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
@@ -228,6 +242,61 @@ function escapeRegex(str) {
 /** Returns the uppercase first name used as label in the prompt */
 function label(char) {
   return char.name.split(' ')[0].toUpperCase()
+}
+
+/**
+ * "Keep It Going" — characters continue chatting with each other.
+ * Generates ~5 back-and-forth messages. User is a spectator.
+ */
+export async function generateKeepGoing({ characters, scene, recentMessages }) {
+  if (!API_KEY) throw new Error('VITE_ANTHROPIC_API_KEY is not set')
+  if (characters.length < 2) return []
+
+  const charDescriptions = characters.map(describeCharacter).join('\n\n')
+
+  const systemPrompt = `You are simulating a group chat. The characters should continue their conversation naturally — the user is watching but not participating.
+
+CHARACTERS:
+${charDescriptions}
+
+SCENE: ${scene || 'A casual group chat.'}
+
+RULES:
+1. Generate exactly 5 messages — characters talking to EACH OTHER.
+2. Alternate between characters naturally. Don't have one character dominate.
+3. Stay in character — match speech style, emoji habits, vocabulary.
+4. The conversation should evolve: introduce a new topic, react to something said earlier, joke around, or debate.
+5. Keep each message to 1-2 sentences. This is a text chat, not essays.
+6. No narration, no action text, no quotation marks.
+7. Make it entertaining — the user is spectating for fun.
+
+FORMAT — exactly 5 lines, one per message:
+${characters.map(c => `${label(c)}: [message]`).join(' or ')}`
+
+  const history = recentMessages
+    .slice(-8)
+    .map(m => {
+      if (m.type === 'user') return `You: ${m.text}`
+      if (m.type === 'character') {
+        const char = characters.find(c => c.id === m.characterId)
+        return char ? `${label(char)}: ${m.text}` : null
+      }
+      return null
+    })
+    .filter(Boolean)
+    .join('\n')
+
+  const userContent = history
+    ? `Recent chat:\n${history}\n\nContinue the conversation between the characters. 5 messages.`
+    : 'Start a natural conversation between the characters. 5 messages.'
+
+  try {
+    const raw = await callWithFallback(systemPrompt, userContent)
+    return parseCatchUpResponses(raw, characters)
+  } catch (err) {
+    console.warn('Keep going generation failed:', err.message)
+    return []
+  }
 }
 
 /**
