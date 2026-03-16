@@ -1,14 +1,11 @@
 const API_KEY = import.meta.env.VITE_ANTHROPIC_API_KEY
 
+const PRIMARY_MODEL = 'claude-sonnet-4-6-20250116'
+const FALLBACK_MODEL = 'claude-haiku-4-5-20251001'
+
 /**
- * Calls Claude Haiku with a batched prompt.
+ * Calls Claude with a batched prompt. Tries Sonnet first, falls back to Haiku.
  * Returns an array of { characterId, text } objects — one per responding character.
- *
- * @param {Object} opts
- * @param {Array}  opts.characters    - full character objects in this chat
- * @param {string} opts.scene         - scene description
- * @param {Array}  opts.messages      - full message history (type: user | character | system)
- * @param {string} [opts.mentionedId] - if set, only this character responds
  */
 export async function getCharacterResponses({ characters, scene, messages, mentionedId }) {
   if (!API_KEY) {
@@ -63,6 +60,21 @@ ${formatExample}`
     ? `Conversation so far:\n${history}\n\nNow respond to the latest message from "You".`
     : 'Start the conversation naturally.'
 
+  // Try Sonnet first, fall back to Haiku on failure
+  const raw = await callWithFallback(systemPrompt, userContent)
+  return parseResponses(raw, respondingChars)
+}
+
+async function callWithFallback(systemPrompt, userContent) {
+  try {
+    return await callClaude(PRIMARY_MODEL, systemPrompt, userContent)
+  } catch (err) {
+    console.warn(`Sonnet failed (${err.message}), falling back to Haiku`)
+    return await callClaude(FALLBACK_MODEL, systemPrompt, userContent)
+  }
+}
+
+async function callClaude(model, systemPrompt, userContent) {
   const response = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: {
@@ -72,7 +84,7 @@ ${formatExample}`
       'anthropic-dangerous-direct-browser-access': 'true',
     },
     body: JSON.stringify({
-      model: 'claude-haiku-4-5-20251001',
+      model,
       max_tokens: 400,
       system: systemPrompt,
       messages: [{ role: 'user', content: userContent }],
@@ -81,13 +93,11 @@ ${formatExample}`
 
   if (!response.ok) {
     const err = await response.text()
-    throw new Error(`Anthropic API error ${response.status}: ${err}`)
+    throw new Error(`${model} error ${response.status}: ${err}`)
   }
 
   const data = await response.json()
-  const raw = data.content[0]?.text || ''
-
-  return parseResponses(raw, respondingChars)
+  return data.content[0]?.text || ''
 }
 
 /** Parses "MIKU: blah\nARIANA: blah" into [{ characterId, text }] */
