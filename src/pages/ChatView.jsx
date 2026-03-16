@@ -300,8 +300,13 @@ export default function ChatView() {
     setChatCharIds(newIds)
     setShowAddSheet(false)
 
-    // Persist updated character list
-    await updateChat(id, { character_ids: newIds })
+    // Update chat name to include new character
+    const newName = newIds
+      .map(cid => getCharacter(cid)?.name.split(' ')[0])
+      .filter(Boolean)
+      .join(' × ')
+    await updateChat(id, { character_ids: newIds, name: newName })
+    setChat(prev => ({ ...prev, name: newName, character_ids: newIds }))
 
     // System message
     const saved = await addMessage({
@@ -312,6 +317,26 @@ export default function ChatView() {
     })
     setMessages(prev => [...prev, {
       id: saved.id, type: 'system', text: `${char.name} has joined the chat`, timestamp: 'now'
+    }])
+
+    // New character greets the chat
+    setTypingChar(char)
+    await delay(800 + Math.random() * 600)
+    setTypingChar(null)
+
+    const greeting = getGreeting(char, chat?.scene)
+    const greetSaved = await addMessage({
+      groupChatId: id,
+      senderType: 'character',
+      senderId: char.id,
+      content: greeting,
+    })
+    setMessages(prev => [...prev, {
+      id: greetSaved.id,
+      type: 'character',
+      characterId: char.id,
+      text: greeting,
+      timestamp: 'now',
     }])
   }
 
