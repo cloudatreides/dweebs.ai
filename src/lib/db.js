@@ -15,7 +15,7 @@ export async function getUserCustomCharacters(userId) {
   return data
 }
 
-export async function saveCustomCharacter({ userId, id, name, fandom, color, avatarUrl, tags, quote, bio, isPublic }) {
+export async function saveCustomCharacter({ userId, id, name, fandom, color, emoji, avatarUrl, tags, quote, bio, personality, isPublic }) {
   const { data, error } = await supabase
     .from('custom_characters')
     .insert({
@@ -25,11 +25,12 @@ export async function saveCustomCharacter({ userId, id, name, fandom, color, ava
       fandom: fandom || 'Custom',
       category: 'Custom',
       color: color || '#A78BFA',
-      emoji: '🎤',
+      emoji: emoji || '🎤',
       avatar_url: avatarUrl || null,
       tags: tags || [],
       quote: quote || '',
       bio: bio || '',
+      personality: personality || '',
       is_public: isPublic ?? true,
     })
     .select()

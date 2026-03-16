@@ -28,7 +28,7 @@ export default function DesktopSidebar() {
       borderRight: '1px solid rgba(255,255,255,0.06)',
     }}>
       {/* Logo */}
-      <div className="px-6 pt-8 pb-5">
+      <div className="px-6 pt-8 pb-5 cursor-pointer" onClick={() => navigate('/home')}>
         <span className="text-xl font-bold text-white tracking-tight">
           dweebs<span style={{ color: '#7C3AED' }}>.ai</span>
         </span>

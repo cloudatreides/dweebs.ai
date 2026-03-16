@@ -18,6 +18,7 @@ function toAppChar(row) {
     tags: row.tags || [],
     quote: row.quote || '',
     bio: row.bio || '',
+    personality: row.personality || '',
     isCustom: true,
     isPublic: row.is_public ?? true,
   }
@@ -53,10 +54,12 @@ export function CharacterProvider({ children }) {
       name: form.name,
       fandom: form.fandom,
       color: form.color,
+      emoji: form.emoji,
       avatarUrl: form.avatarUrl,
       tags: form.tags,
       quote: form.quote,
       bio: form.bio,
+      personality: form.personality,
       isPublic: form.isPublic,
     })
     const appChar = toAppChar(saved)

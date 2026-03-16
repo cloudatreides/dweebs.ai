@@ -235,3 +235,96 @@ function escapeRegex(str) {
 function label(char) {
   return char.name.split(' ')[0].toUpperCase()
 }
+
+/**
+ * Generate a nudge message — characters notice the user went quiet.
+ * Called after ~15 min of inactivity while chat tab is visible.
+ * Returns [{ characterId, text }] — 1-2 messages max.
+ */
+export async function generateNudgeMessage({ characters, scene, recentMessages }) {
+  if (!API_KEY) throw new Error('VITE_ANTHROPIC_API_KEY is not set')
+  if (characters.length === 0) return []
+
+  // Pick 1-2 characters to nudge
+  const numTalkers = Math.min(characters.length, Math.random() < 0.6 ? 1 : 2)
+  const shuffled = [...characters].sort(() => Math.random() - 0.5)
+  const talkers = shuffled.slice(0, numTalkers)
+
+  const charDescriptions = characters.map(describeCharacter).join('\n\n')
+
+  const systemPrompt = `You are simulating a group chat. The user has gone quiet for about 15 minutes. One or two characters should casually acknowledge the silence and try to re-engage the user.
+
+CHARACTERS:
+${charDescriptions}
+
+SCENE: ${scene || 'A casual group chat.'}
+
+RULES:
+1. Keep it VERY casual and brief — 1 short sentence each.
+2. Stay in character — match speech style, emoji habits, tone.
+3. Don't be dramatic or clingy. Just naturally notice the quiet. Examples of good tones: "you still there? 👀", "helloooo", "did you fall asleep on us", "yo where'd you go"
+4. If 2 characters respond, they should riff off each other, not both address the user independently.
+5. No narration, no action text, no quotation marks.
+
+CHARACTERS RESPONDING: ${talkers.map(c => c.name).join(', ')}
+
+FORMAT — one line per character:
+${talkers.map(c => `${label(c)}: [message]`).join('\n')}`
+
+  const history = recentMessages
+    .slice(-6)
+    .map(m => {
+      if (m.type === 'user') return `You: ${m.text}`
+      if (m.type === 'character') {
+        const char = characters.find(c => c.id === m.characterId)
+        return char ? `${label(char)}: ${m.text}` : null
+      }
+      return null
+    })
+    .filter(Boolean)
+    .join('\n')
+
+  const userContent = history
+    ? `Recent chat:\n${history}\n\nThe user has been quiet for ~15 minutes. Nudge them back naturally.`
+    : 'The chat has been quiet for a while. Say something to get things going.'
+
+  try {
+    const raw = await callWithFallback(systemPrompt, userContent)
+    return parseCatchUpResponses(raw, characters)
+  } catch (err) {
+    console.warn('Nudge generation failed:', err.message)
+    return []
+  }
+}
+
+/**
+ * AI-generate a full character profile from just a name.
+ * Returns { name, fandom, bio, personality, tags, quote, emoji, color }.
+ */
+export async function generateCharacterProfile(name) {
+  if (!API_KEY) throw new Error('VITE_ANTHROPIC_API_KEY is not set')
+
+  const systemPrompt = `You generate character profiles for a group chat app where users roleplay with fictional and real-world characters.
+
+Given a character name, return a JSON object with these fields:
+- name: full character name (cleaned up if needed)
+- fandom: their universe/franchise (e.g. "Anime · Naruto", "Music · Pop", "K-pop · BTS", "Games · Sonic")
+- category: one of "Anime", "K-pop", "Music", or "Custom"
+- bio: 1-2 sentence description of who they are (not their personality — their identity/role)
+- personality: a rich roleplay guide (4-6 lines) covering: speech style, energy level, emoji habits, quirks, catchphrases. This is used as the system prompt when they chat.
+- tags: array of exactly 2-3 personality trait words (e.g. ["Fierce", "Loyal", "Chaotic"])
+- quote: a short signature quote they'd actually say (no quotation marks)
+- emoji: a single emoji that represents them
+- color: a hex color that fits their vibe (choose from: #00E5FF, #FF69B4, #FF8C00, #FFD700, #A78BFA, #FF4444, #22C55E, #F59E0B, #EC4899, #06B6D4, #8B5CF6, #EF4444)
+
+Respond with ONLY the JSON object, no markdown, no explanation.`
+
+  const raw = await callWithFallback(systemPrompt, `Generate a character profile for: ${name}`)
+
+  try {
+    const cleaned = raw.replace(/```json?\n?/g, '').replace(/```/g, '').trim()
+    return JSON.parse(cleaned)
+  } catch {
+    throw new Error('Failed to parse AI response')
+  }
+}

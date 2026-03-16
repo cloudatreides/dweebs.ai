@@ -1,10 +1,11 @@
 import { useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Bell, Search, Plus, X, ChevronLeft, Camera, Lock, Globe, MessageCircle, ArrowUpDown, LogOut } from 'lucide-react'
+import { Bell, Search, Plus, X, ChevronLeft, Camera, Lock, Globe, MessageCircle, ArrowUpDown, LogOut, Sparkles, Pencil } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useCharacters } from '../context/CharacterContext'
 import { useAuth } from '../context/AuthContext'
 import { createChat } from '../lib/db'
+import { generateCharacterProfile } from '../lib/chatApi'
 import BottomNav from '../components/BottomNav'
 import BottomSheet from '../components/BottomSheet'
 import CharacterAvatar from '../components/CharacterAvatar'
@@ -163,6 +164,8 @@ const DEFAULT_FORM = {
   tagInput: '',
   quote: '',
   bio: '',
+  personality: '',
+  emoji: '',
   isPublic: true,
 }
 
@@ -185,6 +188,10 @@ export default function Discover() {
   const [showCreateSheet, setShowCreateSheet] = useState(false)
   const [form, setForm] = useState(DEFAULT_FORM)
   const [createStep, setCreateStep] = useState(1)
+  const [createMode, setCreateMode] = useState('ai') // 'ai' or 'manual'
+  const [aiName, setAiName] = useState('')
+  const [generating, setGenerating] = useState(false)
+  const [genError, setGenError] = useState('')
   const [saving, setSaving] = useState(false)
   const fileInputRef = useRef(null)
 
@@ -208,12 +215,44 @@ export default function Discover() {
   const handleCreateOpen = () => {
     setForm(DEFAULT_FORM)
     setCreateStep(1)
+    setCreateMode('ai')
+    setAiName('')
+    setGenError('')
     setShowCreateSheet(true)
   }
 
   const handleCreateClose = () => {
     setShowCreateSheet(false)
     setCreateStep(1)
+    setGenError('')
+  }
+
+  const handleAiGenerate = async () => {
+    if (!aiName.trim() || generating) return
+    setGenerating(true)
+    setGenError('')
+    try {
+      const profile = await generateCharacterProfile(aiName.trim())
+      setForm(f => ({
+        ...f,
+        name: profile.name || aiName.trim(),
+        fandom: profile.fandom || '',
+        category: profile.category || 'Custom',
+        color: profile.color || '#A78BFA',
+        tags: (profile.tags || []).slice(0, 4),
+        quote: profile.quote || '',
+        bio: profile.bio || '',
+        personality: profile.personality || '',
+        emoji: profile.emoji || '',
+        isPublic: true,
+      }))
+      setCreateStep(2) // jump to personality/review step
+    } catch (err) {
+      console.error('AI generation failed:', err)
+      setGenError('Generation failed. Try again or switch to manual.')
+    } finally {
+      setGenerating(false)
+    }
   }
 
   const addTag = (tag) => {
@@ -244,6 +283,8 @@ export default function Discover() {
         tags: form.tags,
         quote: form.quote || `Hi, I'm ${form.name}!`,
         bio: form.bio || `${form.name} — a character created just for you.`,
+        personality: form.personality || '',
+        emoji: form.emoji || '',
         isPublic: form.isPublic,
       })
       handleCreateClose()
@@ -372,7 +413,12 @@ export default function Discover() {
               )}
               <div>
                 <h2 className="text-lg font-bold text-white">Create Character</h2>
-                <p className="text-xs" style={{ color: '#6B7280' }}>Step {createStep} of 3</p>
+                <p className="text-xs" style={{ color: '#6B7280' }}>
+                  {createMode === 'ai' && createStep === 1 ? 'Choose a mode' :
+                   createMode === 'ai' && createStep === 2 ? 'Review & edit' :
+                   createMode === 'ai' && createStep === 3 ? 'Preview' :
+                   `Step ${createStep} of 3`}
+                </p>
               </div>
             </div>
             {/* Step dots */}
@@ -388,120 +434,251 @@ export default function Discover() {
           <AnimatePresence mode="wait">
             {createStep === 1 && (
               <motion.div key="step1" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="flex flex-col gap-4">
-                {/* Avatar upload */}
-                <div className="flex flex-col items-center gap-3">
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={handleImageUpload}
-                  />
+                {/* Mode toggle */}
+                <div className="flex gap-2 p-1 rounded-xl" style={{ background: '#1A1A1F' }}>
                   <button
-                    onClick={() => fileInputRef.current?.click()}
-                    className="relative w-24 h-24 rounded-full overflow-hidden flex items-center justify-center flex-shrink-0"
-                    style={{ background: form.color + '22', border: `2px dashed ${form.color}66` }}
+                    onClick={() => setCreateMode('ai')}
+                    className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-medium transition-all"
+                    style={createMode === 'ai'
+                      ? { background: '#7C3AED', color: 'white' }
+                      : { background: 'transparent', color: '#6B7280' }}
                   >
-                    {form.avatarUrl ? (
-                      <img src={form.avatarUrl} alt="avatar" className="w-full h-full object-cover" />
-                    ) : (
-                      <div className="flex flex-col items-center gap-1">
-                        <Camera size={22} color={form.color} />
-                        <span className="text-[10px] font-medium" style={{ color: form.color }}>Upload</span>
-                      </div>
-                    )}
-                    {form.avatarUrl && (
-                      <div className="absolute inset-0 flex items-center justify-center"
-                        style={{ background: 'rgba(0,0,0,0.4)' }}>
-                        <Camera size={20} color="white" />
-                      </div>
-                    )}
+                    <Sparkles size={14} />
+                    AI Generate
                   </button>
-                  <p className="text-xs" style={{ color: '#6B7280' }}>Tap to upload a photo</p>
+                  <button
+                    onClick={() => setCreateMode('manual')}
+                    className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-medium transition-all"
+                    style={createMode === 'manual'
+                      ? { background: '#7C3AED', color: 'white' }
+                      : { background: 'transparent', color: '#6B7280' }}
+                  >
+                    <Pencil size={14} />
+                    Manual
+                  </button>
+                </div>
 
-                  {/* Accent color */}
-                  <div>
-                    <p className="text-[10px] font-semibold tracking-widest uppercase mb-2 text-center" style={{ color: '#6B7280' }}>Accent Color</p>
-                    <div className="flex flex-wrap justify-center gap-2">
-                      {COLOR_OPTIONS.map(c => (
-                        <button key={c} onClick={() => setForm(f => ({ ...f, color: c }))}
-                          className="w-7 h-7 rounded-full transition-all"
-                          style={{ background: c, outline: form.color === c ? `2px solid white` : 'none', outlineOffset: 2 }} />
-                      ))}
+                {/* AI Generate mode */}
+                {createMode === 'ai' && (
+                  <div className="flex flex-col gap-4">
+                    <div className="text-center py-2">
+                      <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-3"
+                        style={{ background: '#7C3AED22', border: '1.5px solid #7C3AED44' }}>
+                        <Sparkles size={24} color="#A78BFA" />
+                      </div>
+                      <p className="text-sm" style={{ color: '#9CA3AF' }}>
+                        Type any character name and AI will generate their full profile
+                      </p>
                     </div>
-                  </div>
-                </div>
 
-                {/* Name */}
-                <div>
-                  <p className="text-[11px] font-semibold tracking-widest uppercase mb-1.5" style={{ color: '#6B7280' }}>Name</p>
-                  <input
-                    value={form.name}
-                    onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
-                    placeholder="e.g. Shadow the Hedgehog"
-                    className="w-full px-4 py-3 rounded-xl text-sm text-white outline-none"
-                    style={{ background: '#1A1A1F', border: '1px solid rgba(255,255,255,0.06)' }}
-                    maxLength={40}
-                  />
-                </div>
+                    <div>
+                      <p className="text-[11px] font-semibold tracking-widest uppercase mb-1.5" style={{ color: '#6B7280' }}>Character Name</p>
+                      <input
+                        value={aiName}
+                        onChange={e => { setAiName(e.target.value); setGenError('') }}
+                        onKeyDown={e => e.key === 'Enter' && handleAiGenerate()}
+                        placeholder="e.g. Shadow the Hedgehog, Gojo Satoru, Billie Eilish..."
+                        className="w-full px-4 py-3 rounded-xl text-sm text-white outline-none"
+                        style={{ background: '#1A1A1F', border: '1px solid rgba(255,255,255,0.06)' }}
+                        maxLength={60}
+                        disabled={generating}
+                      />
+                    </div>
 
-                {/* Fandom */}
-                <div>
-                  <p className="text-[11px] font-semibold tracking-widest uppercase mb-1.5" style={{ color: '#6B7280' }}>Fandom / Universe</p>
-                  <input
-                    value={form.fandom}
-                    onChange={e => setForm(f => ({ ...f, fandom: e.target.value }))}
-                    placeholder="e.g. Sonic · Video Games"
-                    className="w-full px-4 py-3 rounded-xl text-sm text-white outline-none"
-                    style={{ background: '#1A1A1F', border: '1px solid rgba(255,255,255,0.06)' }}
-                    maxLength={40}
-                  />
-                </div>
+                    {genError && (
+                      <p className="text-xs text-center" style={{ color: '#F87171' }}>{genError}</p>
+                    )}
 
-                {/* Visibility */}
-                <div>
-                  <p className="text-[11px] font-semibold tracking-widest uppercase mb-2" style={{ color: '#6B7280' }}>Visibility</p>
-                  <div className="flex gap-2">
                     <button
-                      onClick={() => setForm(f => ({ ...f, isPublic: true }))}
-                      className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-medium transition-all"
-                      style={form.isPublic
-                        ? { background: '#7C3AED22', border: '1.5px solid #7C3AED', color: '#A78BFA' }
-                        : { background: '#1A1A1F', border: '1px solid rgba(255,255,255,0.06)', color: '#6B7280' }}
+                      onClick={handleAiGenerate}
+                      disabled={!aiName.trim() || generating}
+                      className="w-full py-4 rounded-full font-semibold text-white text-[15px] transition-opacity flex items-center justify-center gap-2"
+                      style={{ background: '#7C3AED', opacity: (aiName.trim() && !generating) ? 1 : 0.4 }}
                     >
-                      <Globe size={14} />
-                      Public
-                    </button>
-                    <button
-                      onClick={() => setForm(f => ({ ...f, isPublic: false }))}
-                      className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-medium transition-all"
-                      style={!form.isPublic
-                        ? { background: '#7C3AED22', border: '1.5px solid #7C3AED', color: '#A78BFA' }
-                        : { background: '#1A1A1F', border: '1px solid rgba(255,255,255,0.06)', color: '#6B7280' }}
-                    >
-                      <Lock size={14} />
-                      Private
+                      {generating ? (
+                        <>
+                          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                          Generating...
+                        </>
+                      ) : (
+                        <>
+                          <Sparkles size={16} />
+                          Generate Character
+                        </>
+                      )}
                     </button>
                   </div>
-                  <p className="text-[11px] mt-1.5" style={{ color: '#4B5563' }}>
-                    {form.isPublic ? 'Others can discover and chat with this character' : 'Only visible to you'}
-                  </p>
-                </div>
+                )}
 
-                <button
-                  onClick={() => setCreateStep(2)}
-                  disabled={!step1Valid}
-                  className="w-full py-4 rounded-full font-semibold text-white text-[15px] mt-1 transition-opacity"
-                  style={{ background: '#7C3AED', opacity: step1Valid ? 1 : 0.4 }}
-                >
-                  Next →
-                </button>
+                {/* Manual mode */}
+                {createMode === 'manual' && (
+                  <div className="flex flex-col gap-4">
+                    {/* Avatar upload */}
+                    <div className="flex flex-col items-center gap-3">
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={handleImageUpload}
+                      />
+                      <button
+                        onClick={() => fileInputRef.current?.click()}
+                        className="relative w-24 h-24 rounded-full overflow-hidden flex items-center justify-center flex-shrink-0"
+                        style={{ background: form.color + '22', border: `2px dashed ${form.color}66` }}
+                      >
+                        {form.avatarUrl ? (
+                          <img src={form.avatarUrl} alt="avatar" className="w-full h-full object-cover" />
+                        ) : (
+                          <div className="flex flex-col items-center gap-1">
+                            <Camera size={22} color={form.color} />
+                            <span className="text-[10px] font-medium" style={{ color: form.color }}>Upload</span>
+                          </div>
+                        )}
+                        {form.avatarUrl && (
+                          <div className="absolute inset-0 flex items-center justify-center"
+                            style={{ background: 'rgba(0,0,0,0.4)' }}>
+                            <Camera size={20} color="white" />
+                          </div>
+                        )}
+                      </button>
+                      <p className="text-xs" style={{ color: '#6B7280' }}>Tap to upload a photo</p>
+
+                      {/* Accent color */}
+                      <div>
+                        <p className="text-[10px] font-semibold tracking-widest uppercase mb-2 text-center" style={{ color: '#6B7280' }}>Accent Color</p>
+                        <div className="flex flex-wrap justify-center gap-2">
+                          {COLOR_OPTIONS.map(c => (
+                            <button key={c} onClick={() => setForm(f => ({ ...f, color: c }))}
+                              className="w-7 h-7 rounded-full transition-all"
+                              style={{ background: c, outline: form.color === c ? `2px solid white` : 'none', outlineOffset: 2 }} />
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Name */}
+                    <div>
+                      <p className="text-[11px] font-semibold tracking-widest uppercase mb-1.5" style={{ color: '#6B7280' }}>Name</p>
+                      <input
+                        value={form.name}
+                        onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
+                        placeholder="e.g. Shadow the Hedgehog"
+                        className="w-full px-4 py-3 rounded-xl text-sm text-white outline-none"
+                        style={{ background: '#1A1A1F', border: '1px solid rgba(255,255,255,0.06)' }}
+                        maxLength={40}
+                      />
+                    </div>
+
+                    {/* Fandom */}
+                    <div>
+                      <p className="text-[11px] font-semibold tracking-widest uppercase mb-1.5" style={{ color: '#6B7280' }}>Fandom / Universe</p>
+                      <input
+                        value={form.fandom}
+                        onChange={e => setForm(f => ({ ...f, fandom: e.target.value }))}
+                        placeholder="e.g. Sonic · Video Games"
+                        className="w-full px-4 py-3 rounded-xl text-sm text-white outline-none"
+                        style={{ background: '#1A1A1F', border: '1px solid rgba(255,255,255,0.06)' }}
+                        maxLength={40}
+                      />
+                    </div>
+
+                    {/* Visibility */}
+                    <div>
+                      <p className="text-[11px] font-semibold tracking-widest uppercase mb-2" style={{ color: '#6B7280' }}>Visibility</p>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => setForm(f => ({ ...f, isPublic: true }))}
+                          className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-medium transition-all"
+                          style={form.isPublic
+                            ? { background: '#7C3AED22', border: '1.5px solid #7C3AED', color: '#A78BFA' }
+                            : { background: '#1A1A1F', border: '1px solid rgba(255,255,255,0.06)', color: '#6B7280' }}
+                        >
+                          <Globe size={14} />
+                          Public
+                        </button>
+                        <button
+                          onClick={() => setForm(f => ({ ...f, isPublic: false }))}
+                          className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-medium transition-all"
+                          style={!form.isPublic
+                            ? { background: '#7C3AED22', border: '1.5px solid #7C3AED', color: '#A78BFA' }
+                            : { background: '#1A1A1F', border: '1px solid rgba(255,255,255,0.06)', color: '#6B7280' }}
+                        >
+                          <Lock size={14} />
+                          Private
+                        </button>
+                      </div>
+                      <p className="text-[11px] mt-1.5" style={{ color: '#4B5563' }}>
+                        {form.isPublic ? 'Others can discover and chat with this character' : 'Only visible to you'}
+                      </p>
+                    </div>
+
+                    <button
+                      onClick={() => setCreateStep(2)}
+                      disabled={!step1Valid}
+                      className="w-full py-4 rounded-full font-semibold text-white text-[15px] mt-1 transition-opacity"
+                      style={{ background: '#7C3AED', opacity: step1Valid ? 1 : 0.4 }}
+                    >
+                      Next →
+                    </button>
+                  </div>
+                )}
               </motion.div>
             )}
 
             {/* Step 2 — Personality */}
             {createStep === 2 && (
               <motion.div key="step2" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="flex flex-col gap-4">
+                {/* AI mode: show generated name + fandom (editable) */}
+                {createMode === 'ai' && (
+                  <>
+                    <div className="flex items-center gap-3 p-3 rounded-xl" style={{ background: '#7C3AED11', border: '1px solid #7C3AED33' }}>
+                      <span className="text-2xl">{form.emoji || '✨'}</span>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold text-sm text-white truncate">{form.name}</p>
+                        <p className="text-xs" style={{ color: '#9CA3AF' }}>{form.fandom}</p>
+                      </div>
+                      <span className="text-[10px] px-2 py-0.5 rounded-full" style={{ background: '#22C55E22', color: '#22C55E' }}>AI Generated</span>
+                    </div>
+
+                    {/* Editable name & fandom */}
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <p className="text-[11px] font-semibold tracking-widest uppercase mb-1.5" style={{ color: '#6B7280' }}>Name</p>
+                        <input
+                          value={form.name}
+                          onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
+                          className="w-full px-3 py-2.5 rounded-xl text-sm text-white outline-none"
+                          style={{ background: '#1A1A1F', border: '1px solid rgba(255,255,255,0.06)' }}
+                          maxLength={40}
+                        />
+                      </div>
+                      <div>
+                        <p className="text-[11px] font-semibold tracking-widest uppercase mb-1.5" style={{ color: '#6B7280' }}>Fandom</p>
+                        <input
+                          value={form.fandom}
+                          onChange={e => setForm(f => ({ ...f, fandom: e.target.value }))}
+                          className="w-full px-3 py-2.5 rounded-xl text-sm text-white outline-none"
+                          style={{ background: '#1A1A1F', border: '1px solid rgba(255,255,255,0.06)' }}
+                          maxLength={40}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Color picker */}
+                    <div>
+                      <p className="text-[10px] font-semibold tracking-widest uppercase mb-2" style={{ color: '#6B7280' }}>Accent Color</p>
+                      <div className="flex flex-wrap gap-2">
+                        {COLOR_OPTIONS.map(c => (
+                          <button key={c} onClick={() => setForm(f => ({ ...f, color: c }))}
+                            className="w-6 h-6 rounded-full transition-all"
+                            style={{ background: c, outline: form.color === c ? `2px solid white` : 'none', outlineOffset: 2 }} />
+                        ))}
+                      </div>
+                    </div>
+                  </>
+                )}
+
                 {/* Traits */}
                 <div>
                   <p className="text-[11px] font-semibold tracking-widest uppercase mb-2" style={{ color: '#6B7280' }}>
@@ -522,7 +699,7 @@ export default function Discover() {
                       )
                     })}
                   </div>
-                  {/* Selected tags */}
+                  {/* Selected tags (includes AI-generated ones not in suggestions) */}
                   {form.tags.length > 0 && (
                     <div className="flex flex-wrap gap-1.5 mt-2">
                       {form.tags.map(tag => (
@@ -545,7 +722,7 @@ export default function Discover() {
                     value={form.bio}
                     onChange={e => setForm(f => ({ ...f, bio: e.target.value.slice(0, 200) }))}
                     placeholder="Describe their personality, backstory, how they speak and what they care about..."
-                    rows={4}
+                    rows={3}
                     className="w-full px-4 py-3 rounded-xl text-sm text-white outline-none resize-none"
                     style={{ background: '#1A1A1F', border: '1px solid rgba(255,255,255,0.06)' }}
                   />
@@ -586,7 +763,7 @@ export default function Discover() {
                   style={{ background: form.color + '33', border: `2px solid ${form.color}55` }}>
                   {form.avatarUrl
                     ? <img src={form.avatarUrl} alt="avatar" className="w-full h-full object-cover" />
-                    : '🎤'}
+                    : (form.emoji || '🎤')}
                 </div>
                 <div className="flex flex-col items-center gap-2">
                   <h3 className="text-xl font-bold text-white">{form.name}</h3>

@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ArrowUp, Pause, ChevronLeft, Plus } from 'lucide-react'
 import { getResponse } from '../data/mockResponses'
-import { getCharacterResponses, generateCatchUpMessages } from '../lib/chatApi'
+import { getCharacterResponses, generateCatchUpMessages, generateNudgeMessage } from '../lib/chatApi'
 import { getChat, getChatMessages, addMessage, addMessages, updateChat } from '../lib/db'
 import { useCharacters } from '../context/CharacterContext'
 import BottomSheet from '../components/BottomSheet'
@@ -22,10 +22,10 @@ function parseMention(text, charIds, getCharacter) {
 }
 
 // Highlight @mentions in message text
-function renderWithMentions(text) {
+function renderWithMentions(text, isUserMsg = false) {
   return text.split(/(@\w+)/g).map((part, i) =>
     part.startsWith('@')
-      ? <span key={i} style={{ color: '#A78BFA' }}>{part}</span>
+      ? <span key={i} className="font-semibold" style={{ color: isUserMsg ? '#E9D5FF' : '#A78BFA' }}>{part}</span>
       : part
   )
 }
@@ -189,6 +189,84 @@ export default function ChatView() {
       setMentionSuggestions([])
     }
   }, [input, chatCharIds])
+
+  // Idle nudge system — characters ping user after 15 min of inactivity
+  const idleTimerRef = useRef(null)
+  const nudgeFiredRef = useRef(false)
+
+  const resetIdleTimer = () => {
+    nudgeFiredRef.current = false
+    if (idleTimerRef.current) clearTimeout(idleTimerRef.current)
+    idleTimerRef.current = setTimeout(() => {
+      // Only fire if tab is visible and we haven't nudged already
+      if (document.visibilityState !== 'visible' || nudgeFiredRef.current) return
+      if (typingChar) return // don't nudge while characters are responding
+      nudgeFiredRef.current = true
+      fireNudge()
+    }, 15 * 60 * 1000) // 15 minutes
+  }
+
+  const fireNudge = async () => {
+    if (!chat || chatCharIds.length === 0) return
+    const chars = chatCharIds.map(cid => getCharacter(cid)).filter(Boolean)
+    if (chars.length === 0) return
+
+    try {
+      const responses = await generateNudgeMessage({
+        characters: chars,
+        scene: chat.scene,
+        recentMessages: messages,
+      })
+      if (responses.length === 0) return
+
+      for (let i = 0; i < responses.length; i++) {
+        const { characterId, text } = responses[i]
+        const char = chars.find(c => c.id === characterId)
+
+        setTypingChar(char || null)
+        await delay(600 + Math.random() * 400)
+        setTypingChar(null)
+
+        const saved = await addMessage({
+          groupChatId: id,
+          senderType: 'character',
+          senderId: characterId,
+          content: text,
+        })
+
+        setMessages(prev => [...prev, {
+          id: saved.id,
+          type: 'character',
+          characterId,
+          text,
+          timestamp: saved.created_at,
+        }])
+
+        if (i < responses.length - 1) await delay(300)
+      }
+    } catch (err) {
+      console.warn('Nudge failed:', err.message)
+    }
+  }
+
+  // Start/reset idle timer when messages change (user sent something)
+  useEffect(() => {
+    if (!loading && chat) resetIdleTimer()
+    return () => {
+      if (idleTimerRef.current) clearTimeout(idleTimerRef.current)
+    }
+  }, [messages.length, loading, chat?.id])
+
+  // Pause timer when tab is hidden, resume when visible
+  useEffect(() => {
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible' && !nudgeFiredRef.current) {
+        resetIdleTimer()
+      }
+    }
+    document.addEventListener('visibilitychange', handleVisibility)
+    return () => document.removeEventListener('visibilitychange', handleVisibility)
+  }, [])
 
   const insertMention = (char) => {
     const newInput = input.replace(/@(\w*)$/, `@${char.name.split(' ')[0]} `)
@@ -451,7 +529,7 @@ export default function ChatView() {
               {/* User message */}
               {msg.type === 'user' && (
                 <div className="px-3 py-2.5 rounded-2xl rounded-tr-none text-sm leading-relaxed max-w-[78%]" style={{ background: '#7C3AED', color: 'white' }}>
-                  {renderWithMentions(msg.text)}
+                  {renderWithMentions(msg.text, true)}
                 </div>
               )}
             </motion.div>

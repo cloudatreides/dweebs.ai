@@ -106,6 +106,7 @@ create table public.custom_characters (
   tags text[] not null default '{}',
   quote text default '',
   bio text default '',
+  personality text default '',
   is_public boolean default true,
   created_at timestamptz not null default now()
 );
