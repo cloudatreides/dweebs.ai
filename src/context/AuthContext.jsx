@@ -3,27 +3,36 @@ import { supabase } from '../lib/supabase'
 
 const AuthContext = createContext()
 
+// Check if URL contains OAuth callback tokens
+function hasAuthParams() {
+  const hash = window.location.hash
+  const search = window.location.search
+  return hash.includes('access_token') || search.includes('code=')
+}
+
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null)
   const [profile, setProfile] = useState(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null)
-      if (session?.user) fetchProfile(session.user.id)
-      else setLoading(false)
-    })
-
-    // Listen for auth changes
+    // Listen for auth changes FIRST — this catches the OAuth callback
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null)
       if (session?.user) fetchProfile(session.user.id)
       else {
         setProfile(null)
-        setLoading(false)
+        // Only stop loading if there are no auth params pending
+        if (!hasAuthParams()) setLoading(false)
       }
+    })
+
+    // Then check for existing session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null)
+      if (session?.user) fetchProfile(session.user.id)
+      else if (!hasAuthParams()) setLoading(false)
+      // If there are auth params, keep loading=true — onAuthStateChange will handle it
     })
 
     return () => subscription.unsubscribe()
