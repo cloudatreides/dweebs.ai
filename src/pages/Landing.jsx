@@ -141,8 +141,8 @@ const HOW_IT_WORKS = [
 ]
 
 // --- Carousel rows (split into two rows, each scrolling opposite directions) ---
-const ROW_1_IDS = ['miku', 'ariana', 'taylor', 'jungkook', 'goku', 'billie', 'jimin']
-const ROW_2_IDS = ['naruto', 'luffy', 'levi', 'dua', 'zoro', 'sabrina', 'itachi']
+const ROW_1_IDS = ['gojo', 'ariana', 'taehyung', 'jungkook', 'lisa', 'billie', 'weeknd', 'miku', 'eren', 'sukuna']
+const ROW_2_IDS = ['naruto', 'jennie', 'levi', 'dua', 'elon', 'sabrina', 'zenitsu', 'toji', 'jimin', 'taylor']
 
 function CharCard({ char }) {
   return (

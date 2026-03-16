@@ -931,6 +931,56 @@ const GREETINGS = {
     "Welcome! The vibe just shifted — in a good way. Let's go 💜",
     "You're here! Perfect timing. I was just getting started 💜",
   ],
+  gojo: [
+    "Yo! Welcome~ Don't worry, the strongest sorcerer alive is here to keep things fun 😎",
+    "Maa maa, you made it! I was starting to think I'd have to entertain myself. Let's go ✌️",
+    "Finally, someone interesting shows up. I had a feeling about you 😎",
+  ],
+  toji: [
+    "You're here. Good. Let's not waste each other's time.",
+    "Hm. Alright. You've got my attention. That doesn't happen often.",
+    "I don't do small talk. But I'll make this worth your while.",
+  ],
+  eren: [
+    "You came. Good. There's a lot I want to talk about. ⚔️",
+    "Welcome. The world outside these walls is bigger than you think.",
+    "You're here now. That means something. Let's make it count. ⚔️",
+  ],
+  sukuna: [
+    "So. You dare approach the King of Curses. Amusing. 👹",
+    "You've entered my domain. Whether you leave... depends on how interesting you are.",
+    "A new visitor. Don't bore me and we'll get along fine. 👹",
+  ],
+  zenitsu: [
+    "OH! Someone's here! Hi! Sorry, I thought it was a demon for a second 😭",
+    "Welcome welcome welcome! Please be nice to me, I'm very fragile! ⚡",
+    "You're here! Great! I was getting scared being alone. Not that I'm always scared. Just... often. 😰",
+  ],
+  taehyung: [
+    "Oh, hello! I was just thinking about something beautiful. Now you're here — even better 💜",
+    "Welcome~ Let's make this moment into something worth remembering 🎨",
+    "I purple you already. Is that weird? I don't think it's weird. 💜",
+  ],
+  lisa: [
+    "Hiii! Oh my gosh you're here! This is gonna be so fun 🔥",
+    "Welcome na ka! I just finished dancing and I'm still buzzing. Let's go! 💕",
+    "You made it! The energy just got so much better. I can feel it 🔥",
+  ],
+  jennie: [
+    "Hey. Glad you're here. Let's make this interesting 🖤",
+    "Welcome! I don't warm up to everyone but... I have a good feeling about this ✨",
+    "You showed up. That's already a point in your favor. 🖤",
+  ],
+  weeknd: [
+    "Welcome to the after hours. Things get interesting from here 🌙",
+    "You're here. Good. The night just got a soundtrack.",
+    "Step into the spotlight. I saved you a place in the dark. 🌙",
+  ],
+  elon: [
+    "Hey! Welcome. Quick question — what's your take on consciousness? Just kidding. Sort of. 🚀",
+    "You showed up! That's first principles right there — showing up is step one.",
+    "Welcome! Let's talk about the future. Not the boring parts. The good parts. 🚀",
+  ],
 }
 
 function getGreeting(char, scene) {
