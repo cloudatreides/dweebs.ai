@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
-import { Compass, MessageSquare, Plus, User } from 'lucide-react'
+import { Compass, MessageSquare, Plus, User, LogOut } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useCharacters } from '../context/CharacterContext'
 import { getUserChats } from '../lib/db'
@@ -8,7 +8,7 @@ import { getUserChats } from '../lib/db'
 export default function DesktopSidebar() {
   const navigate = useNavigate()
   const location = useLocation()
-  const { user } = useAuth()
+  const { user, signOut } = useAuth()
   const { getCharacter } = useCharacters()
   const path = location.pathname
   const isActive = (route) => path === route || path.startsWith(route + '/')
@@ -73,7 +73,7 @@ export default function DesktopSidebar() {
       <div className="h-px mx-5 mb-3" style={{ background: 'rgba(255,255,255,0.05)' }} />
 
       {/* Chat list */}
-      <div className="px-3 flex-1 overflow-y-auto pb-4">
+      <div className="px-3 flex-1 overflow-y-auto">
         <p className="text-[10px] font-semibold tracking-widest uppercase px-2 mb-2" style={{ color: '#4B5563' }}>
           My Worlds
         </p>
@@ -121,6 +121,18 @@ export default function DesktopSidebar() {
             )
           })}
         </div>
+      </div>
+
+      {/* Logout */}
+      <div className="px-3 pb-5 pt-3" style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+        <button
+          onClick={async () => { await signOut(); navigate('/') }}
+          className="flex items-center gap-3 px-3 py-2.5 rounded-xl w-full text-left transition-all hover:opacity-80"
+          style={{ color: '#6B7280' }}
+        >
+          <LogOut size={17} strokeWidth={1.8} />
+          <span className="text-sm font-medium">Log out</span>
+        </button>
       </div>
     </div>
   )
