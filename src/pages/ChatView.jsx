@@ -75,7 +75,7 @@ export default function ChatView() {
           if (lastMsg) {
             const lastTime = new Date(lastMsg.created_at).getTime()
             const hoursAway = (Date.now() - lastTime) / (1000 * 60 * 60)
-            if (hoursAway >= 2) {
+            if (hoursAway >= 0.5) { // 30 minutes
               generateCatchUp(chatData, mapped, hoursAway)
             }
           }

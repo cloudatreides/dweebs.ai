@@ -1,11 +1,11 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Bell, Search, Plus, X, ChevronLeft, Camera, Lock, Globe, MessageCircle, ArrowUpDown, LogOut, Sparkles, Pencil } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useCharacters } from '../context/CharacterContext'
 import { useAuth } from '../context/AuthContext'
-import { createChat } from '../lib/db'
-import { generateCharacterProfile } from '../lib/chatApi'
+import { createChat, getUserChats, getChatMessages, addMessage } from '../lib/db'
+import { generateCharacterProfile, generateCatchUpMessages } from '../lib/chatApi'
 import BottomNav from '../components/BottomNav'
 import BottomSheet from '../components/BottomSheet'
 import CharacterAvatar from '../components/CharacterAvatar'
@@ -179,7 +179,7 @@ const SORT_OPTIONS = [
 export default function Discover() {
   const navigate = useNavigate()
   const { user, signOut } = useAuth()
-  const { allCharacters, saveCustomCharacter } = useCharacters()
+  const { allCharacters, saveCustomCharacter, getCharacter } = useCharacters()
   const [search, setSearch] = useState('')
   const [filter, setFilter] = useState('All')
   const [sort, setSort] = useState('popular')
@@ -194,6 +194,62 @@ export default function Discover() {
   const [genError, setGenError] = useState('')
   const [saving, setSaving] = useState(false)
   const fileInputRef = useRef(null)
+
+  // On login/mount: pre-generate catch-up messages for idle chats
+  useEffect(() => {
+    if (!user) return
+    let cancelled = false
+
+    async function checkCatchUps() {
+      try {
+        const chats = await getUserChats(user.id)
+        for (const chat of chats) {
+          if (cancelled) break
+          if (chat.character_ids.length < 2) continue
+
+          const msgs = await getChatMessages(chat.id)
+          if (msgs.length === 0) continue
+
+          const lastMsg = msgs[msgs.length - 1]
+          const lastTime = new Date(lastMsg.created_at).getTime()
+          const hoursAway = (Date.now() - lastTime) / (1000 * 60 * 60)
+          if (hoursAway < 0.5) continue // less than 30 min
+
+          const chars = chat.character_ids.map(cid => getCharacter(cid)).filter(Boolean)
+          if (chars.length < 2) continue
+
+          const recentMapped = msgs.slice(-6).map(m => ({
+            type: m.sender_type,
+            characterId: m.sender_id,
+            text: m.content,
+          }))
+
+          const responses = await generateCatchUpMessages({
+            characters: chars,
+            scene: chat.scene,
+            recentMessages: recentMapped,
+            hoursAway,
+          })
+
+          if (cancelled || responses.length === 0) continue
+
+          for (const { characterId, text } of responses) {
+            await addMessage({
+              groupChatId: chat.id,
+              senderType: 'character',
+              senderId: characterId,
+              content: text,
+            })
+          }
+        }
+      } catch (err) {
+        console.warn('Login catch-up failed:', err.message)
+      }
+    }
+
+    checkCatchUps()
+    return () => { cancelled = true }
+  }, [user?.id])
 
   const filtered = allCharacters
     .filter(c => {
