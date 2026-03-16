@@ -53,7 +53,7 @@ export default function NewChat() {
   }
 
   const surpriseMe = () => {
-    const names = selectedIds.map(id => characters.find(c => c.id === id)?.name.split(' ')[0])
+    const names = selectedIds.map(id => getCharacter(id)?.name.split(' ')[0]).filter(Boolean)
     const template = SCENE_TEMPLATES[Math.floor(Math.random() * SCENE_TEMPLATES.length)]
     let result = template
     names.forEach((name, i) => {
