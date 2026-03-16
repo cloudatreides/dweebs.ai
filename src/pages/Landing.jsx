@@ -79,7 +79,7 @@ function LiveChatPreview() {
           })}
         </div>
         <div className="flex flex-col">
-          <span className="text-sm font-semibold text-white leading-tight">Recording Studio</span>
+          <span className="text-sm font-semibold text-white leading-tight">The Collab</span>
           <span className="text-[10px]" style={{ color: '#6B7280' }}>3 characters · group chat</span>
         </div>
         <div className="ml-auto flex items-center gap-1">

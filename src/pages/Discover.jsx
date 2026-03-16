@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useCharacters } from '../context/CharacterContext'
 import { useAuth } from '../context/AuthContext'
 import { createChat, getUserChats, getChatMessages, addMessage } from '../lib/db'
-import { generateCharacterProfile, generateCatchUpMessages } from '../lib/chatApi'
+import { generateCharacterProfile, generateCatchUpMessages, fetchCharacterImage } from '../lib/chatApi'
 import BottomNav from '../components/BottomNav'
 import BottomSheet from '../components/BottomSheet'
 import CharacterAvatar from '../components/CharacterAvatar'
@@ -288,7 +288,11 @@ export default function Discover() {
     setGenerating(true)
     setGenError('')
     try {
-      const profile = await generateCharacterProfile(aiName.trim())
+      // Run profile generation and image fetch in parallel
+      const [profile, imageUrl] = await Promise.all([
+        generateCharacterProfile(aiName.trim()),
+        fetchCharacterImage(aiName.trim()),
+      ])
       setForm(f => ({
         ...f,
         name: profile.name || aiName.trim(),
@@ -300,6 +304,7 @@ export default function Discover() {
         bio: profile.bio || '',
         personality: profile.personality || '',
         emoji: profile.emoji || '',
+        avatarUrl: imageUrl || null,
         isPublic: true,
       }))
       setCreateStep(2) // jump to personality/review step
@@ -683,7 +688,26 @@ export default function Discover() {
                 {createMode === 'ai' && (
                   <>
                     <div className="flex items-center gap-3 p-3 rounded-xl" style={{ background: '#7C3AED11', border: '1px solid #7C3AED33' }}>
-                      <span className="text-2xl">{form.emoji || '✨'}</span>
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={handleImageUpload}
+                      />
+                      <button
+                        onClick={() => fileInputRef.current?.click()}
+                        className="relative w-12 h-12 rounded-full overflow-hidden flex-shrink-0 flex items-center justify-center text-2xl"
+                        style={{ background: form.color + '33', border: `1.5px solid ${form.color}55` }}
+                      >
+                        {form.avatarUrl
+                          ? <img src={form.avatarUrl} alt="avatar" className="w-full h-full object-cover" />
+                          : (form.emoji || '✨')}
+                        <div className="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity"
+                          style={{ background: 'rgba(0,0,0,0.5)' }}>
+                          <Camera size={14} color="white" />
+                        </div>
+                      </button>
                       <div className="flex-1 min-w-0">
                         <p className="font-semibold text-sm text-white truncate">{form.name}</p>
                         <p className="text-xs" style={{ color: '#9CA3AF' }}>{form.fandom}</p>

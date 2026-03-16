@@ -1,7 +1,6 @@
 const API_KEY = import.meta.env.VITE_ANTHROPIC_API_KEY
 
-const PRIMARY_MODEL = 'claude-sonnet-4-6-20250116'
-const FALLBACK_MODEL = 'claude-haiku-4-5-20251001'
+const PRIMARY_MODEL = 'claude-haiku-4-5-20251001'
 
 /**
  * Build a rich character description for the system prompt.
@@ -142,12 +141,7 @@ ${talkers[1] ? `${label(talkers[1])}: [message]` : ''}
 }
 
 async function callWithFallback(systemPrompt, userContent) {
-  try {
-    return await callClaude(PRIMARY_MODEL, systemPrompt, userContent)
-  } catch (err) {
-    console.warn(`Sonnet failed (${err.message}), falling back to Haiku`)
-    return await callClaude(FALLBACK_MODEL, systemPrompt, userContent)
-  }
+  return await callClaude(PRIMARY_MODEL, systemPrompt, userContent)
 }
 
 async function callClaude(model, systemPrompt, userContent) {
@@ -294,6 +288,34 @@ ${talkers.map(c => `${label(c)}: [message]`).join('\n')}`
   } catch (err) {
     console.warn('Nudge generation failed:', err.message)
     return []
+  }
+}
+
+/**
+ * Fetch a character image from Wikipedia.
+ * Returns a URL string or null if not found.
+ */
+export async function fetchCharacterImage(name) {
+  try {
+    // Search Wikipedia for the character
+    const searchUrl = `https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(name)}&format=json&origin=*&srlimit=1`
+    const searchRes = await fetch(searchUrl)
+    const searchData = await searchRes.json()
+    const title = searchData?.query?.search?.[0]?.title
+    if (!title) return null
+
+    // Get the page image
+    const imgUrl = `https://en.wikipedia.org/w/api.php?action=query&titles=${encodeURIComponent(title)}&prop=pageimages&format=json&origin=*&pithumbsize=300`
+    const imgRes = await fetch(imgUrl)
+    const imgData = await imgRes.json()
+    const pages = imgData?.query?.pages
+    if (!pages) return null
+
+    const page = Object.values(pages)[0]
+    return page?.thumbnail?.source || null
+  } catch (err) {
+    console.warn('Wikipedia image fetch failed:', err.message)
+    return null
   }
 }
 

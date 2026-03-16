@@ -373,6 +373,7 @@ export default function ChatView() {
   }
 
   const handleAddCharacter = async (charId) => {
+    if (chatCharIds.length >= 5) return
     const char = getCharacter(charId)
     const newIds = [...chatCharIds, charId]
     setChatCharIds(newIds)
@@ -461,18 +462,20 @@ export default function ChatView() {
           <p className="font-semibold text-sm text-white truncate">{chat.name}</p>
           <p className="text-[11px] truncate" style={{ color: '#6B7280' }}>{subtitle}</p>
         </div>
-        {isSolo ? (
-          <button
-            onClick={() => setShowAddSheet(true)}
-            className="flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-semibold text-white flex-shrink-0"
-            style={{ background: '#7C3AED' }}
-          >
-            <Plus size={12} /> Add
-          </button>
-        ) : (
-          <button onClick={() => setShowAddSheet(true)}>
-            <Plus size={20} color="#7C3AED" />
-          </button>
+        {chatCharIds.length < 5 && (
+          isSolo ? (
+            <button
+              onClick={() => setShowAddSheet(true)}
+              className="flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-semibold text-white flex-shrink-0"
+              style={{ background: '#7C3AED' }}
+            >
+              <Plus size={12} /> Add
+            </button>
+          ) : (
+            <button onClick={() => setShowAddSheet(true)}>
+              <Plus size={20} color="#7C3AED" />
+            </button>
+          )
         )}
         <button className="ml-1">
           <Pause size={18} color="#6B7280" />
@@ -566,8 +569,8 @@ export default function ChatView() {
         <div ref={bottomRef} />
       </div>
 
-      {/* Add another character bar (solo only) */}
-      {isSolo && (
+      {/* Add another character bar (solo only, under 5 chars) */}
+      {isSolo && chatCharIds.length < 5 && (
         <div className="px-4 py-2 flex items-center justify-between flex-shrink-0" style={{ background: '#111115', borderTop: '1px solid rgba(255,255,255,0.04)' }}>
           <span className="text-xs" style={{ color: '#6B7280' }}>Add another character to the chat</span>
           <button
