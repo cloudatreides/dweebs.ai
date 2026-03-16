@@ -379,7 +379,19 @@ export default function ChatView() {
     return Date.now() < expiry ? expiry : null
   }
 
-  const canKeepGoing = chatCharIds.length >= 2 && !typingChar && !keepGoingActive && !getKeepGoingCooldown()
+  const keepGoingCooldownExpiry = getKeepGoingCooldown()
+  const keepGoingOnCooldown = !!keepGoingCooldownExpiry
+  const canKeepGoing = chatCharIds.length >= 2 && !typingChar && !keepGoingActive && !keepGoingOnCooldown
+  const showKeepGoing = chatCharIds.length >= 2 && !typingChar && !keepGoingActive
+
+  const formatCooldown = () => {
+    if (!keepGoingCooldownExpiry) return ''
+    const remaining = keepGoingCooldownExpiry - Date.now()
+    if (remaining <= 0) return ''
+    const hours = Math.floor(remaining / (1000 * 60 * 60))
+    const mins = Math.ceil((remaining % (1000 * 60 * 60)) / (1000 * 60))
+    return hours > 0 ? `${hours}h ${mins}m` : `${mins}m`
+  }
 
   const handleKeepGoing = async () => {
     if (!canKeepGoing) return
@@ -685,7 +697,7 @@ export default function ChatView() {
 
       {/* Suggestion chips + Keep It Going */}
       <AnimatePresence>
-        {(promptSuggestions.length > 0 || canKeepGoing) && !typingChar && !keepGoingActive && (
+        {(promptSuggestions.length > 0 || showKeepGoing) && (
           <motion.div
             initial={{ opacity: 0, y: 6 }}
             animate={{ opacity: 1, y: 0 }}
@@ -702,15 +714,25 @@ export default function ChatView() {
                 {s}
               </button>
             ))}
-            {canKeepGoing && (
-              <button
-                onClick={handleKeepGoing}
-                className="text-xs px-3 py-1.5 rounded-full transition-all hover:opacity-80 flex items-center gap-1.5"
-                style={{ background: '#7C3AED22', color: '#A78BFA', border: '1px solid #7C3AED44' }}
-              >
-                <Play size={10} fill="#A78BFA" />
-                Keep It Going
-              </button>
+            {showKeepGoing && (
+              <div className="relative group">
+                <button
+                  onClick={canKeepGoing ? handleKeepGoing : undefined}
+                  className="text-xs px-3 py-1.5 rounded-full transition-all flex items-center gap-1.5"
+                  style={canKeepGoing
+                    ? { background: '#7C3AED22', color: '#A78BFA', border: '1px solid #7C3AED44', cursor: 'pointer' }
+                    : { background: '#1A1A1F', color: '#4B5563', border: '1px solid rgba(255,255,255,0.06)', cursor: 'default' }}
+                >
+                  <Play size={10} fill={canKeepGoing ? '#A78BFA' : '#4B5563'} />
+                  Keep It Going
+                </button>
+                {keepGoingOnCooldown && (
+                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2.5 py-1.5 rounded-lg text-[11px] whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"
+                    style={{ background: '#1E1E26', color: '#9CA3AF', border: '1px solid rgba(255,255,255,0.1)', boxShadow: '0 4px 12px rgba(0,0,0,0.4)' }}>
+                    Available in {formatCooldown()}
+                  </div>
+                )}
+              </div>
             )}
           </motion.div>
         )}
