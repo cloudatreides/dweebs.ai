@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ArrowUp, Pause, ChevronLeft, Plus } from 'lucide-react'
 import { getResponse } from '../data/mockResponses'
-import { getCharacterResponses } from '../lib/chatApi'
+import { getCharacterResponses, generateCatchUpMessages } from '../lib/chatApi'
 import { getChat, getChatMessages, addMessage, addMessages, updateChat } from '../lib/db'
 import { useCharacters } from '../context/CharacterContext'
 import BottomSheet from '../components/BottomSheet'
@@ -69,6 +69,16 @@ export default function ChatView() {
         // First time opening a new chat — characters greet the user
         if (mapped.length === 0 && chatData.character_ids.length > 0) {
           generateGreetings(chatData)
+        } else if (mapped.length > 0 && chatData.character_ids.length >= 2) {
+          // Check if user has been away long enough for catch-up messages
+          const lastMsg = messagesData[messagesData.length - 1]
+          if (lastMsg) {
+            const lastTime = new Date(lastMsg.created_at).getTime()
+            const hoursAway = (Date.now() - lastTime) / (1000 * 60 * 60)
+            if (hoursAway >= 2) {
+              generateCatchUp(chatData, mapped, hoursAway)
+            }
+          }
         }
       } catch (err) {
         console.error('Failed to load chat:', err)
@@ -106,6 +116,54 @@ export default function ChatView() {
       }])
 
       if (i < chars.length - 1) await delay(400)
+    }
+  }
+
+  async function generateCatchUp(chatData, existingMessages, hoursAway) {
+    const chars = chatData.character_ids.map(cid => getCharacter(cid)).filter(Boolean)
+    if (chars.length < 2) return
+
+    try {
+      const responses = await generateCatchUpMessages({
+        characters: chars,
+        scene: chatData.scene,
+        recentMessages: existingMessages,
+        hoursAway,
+      })
+
+      if (responses.length === 0) return
+
+      // Persist catch-up messages with backdated timestamps
+      const now = Date.now()
+      const msgInterval = Math.floor((hoursAway * 60 * 60 * 1000) / (responses.length + 1))
+
+      for (let i = 0; i < responses.length; i++) {
+        const { characterId, text } = responses[i]
+        const char = chars.find(c => c.id === characterId)
+
+        setTypingChar(char || null)
+        await delay(600 + Math.random() * 400)
+        setTypingChar(null)
+
+        const saved = await addMessage({
+          groupChatId: chatData.id,
+          senderType: 'character',
+          senderId: characterId,
+          content: text,
+        })
+
+        setMessages(prev => [...prev, {
+          id: saved.id,
+          type: 'character',
+          characterId,
+          text,
+          timestamp: saved.created_at,
+        }])
+
+        if (i < responses.length - 1) await delay(300)
+      }
+    } catch (err) {
+      console.warn('Catch-up generation failed:', err.message)
     }
   }
 
