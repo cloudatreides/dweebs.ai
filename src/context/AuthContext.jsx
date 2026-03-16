@@ -1,61 +1,66 @@
-import { createContext, useContext, useEffect, useState } from 'react'
+import { createContext, useContext, useEffect, useState, useRef } from 'react'
 import { supabase } from '../lib/supabase'
 
 const AuthContext = createContext()
-
-// Check if URL contains OAuth callback tokens
-function hasAuthParams() {
-  const hash = window.location.hash
-  const search = window.location.search
-  return hash.includes('access_token') || search.includes('code=')
-}
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null)
   const [profile, setProfile] = useState(null)
   const [loading, setLoading] = useState(true)
+  const resolved = useRef(false)
+
+  function finishLoading() {
+    resolved.current = true
+    setLoading(false)
+  }
 
   useEffect(() => {
-    // Listen for auth changes FIRST — this catches the OAuth callback
+    // Safety timeout — never spin longer than 4 seconds
+    const timeout = setTimeout(() => {
+      if (!resolved.current) {
+        console.warn('Auth timeout — forcing load')
+        finishLoading()
+      }
+    }, 4000)
+
+    // Listen for auth state changes (handles OAuth callback)
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null)
-      if (session?.user) fetchProfile(session.user.id)
-      else {
+      if (session?.user) {
+        fetchProfile(session.user.id)
+      } else {
         setProfile(null)
-        // Only stop loading if there are no auth params pending
-        if (!hasAuthParams()) setLoading(false)
+        finishLoading()
       }
     })
 
-    // Then check for existing session
+    // Check existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null)
-      if (session?.user) fetchProfile(session.user.id)
-      else if (!hasAuthParams()) setLoading(false)
-      // If there are auth params, keep loading=true — onAuthStateChange will handle it
+      if (session?.user) {
+        setUser(session.user)
+        fetchProfile(session.user.id)
+      }
+      // Don't finishLoading here if no session — onAuthStateChange may still fire
     })
 
-    return () => subscription.unsubscribe()
+    return () => {
+      clearTimeout(timeout)
+      subscription.unsubscribe()
+    }
   }, [])
 
   async function fetchProfile(userId) {
     try {
-      const { data, error } = await supabase
+      const { data } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', userId)
         .single()
-
-      if (error) {
-        console.warn('Profile fetch failed:', error.message)
-        // Profile might not exist yet (trigger delay) — continue without it
-      }
       setProfile(data || null)
     } catch (err) {
       console.warn('Profile fetch error:', err)
-    } finally {
-      setLoading(false)
     }
+    finishLoading()
   }
 
   async function signInWithGoogle() {
