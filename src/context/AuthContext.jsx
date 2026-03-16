@@ -15,15 +15,51 @@ export function AuthProvider({ children }) {
   }
 
   useEffect(() => {
-    // Safety timeout — never spin longer than 4 seconds
+    // Safety timeout
     const timeout = setTimeout(() => {
       if (!resolved.current) {
         console.warn('Auth timeout — forcing load')
         finishLoading()
       }
-    }, 4000)
+    }, 5000)
 
-    // Listen for auth state changes (handles OAuth callback)
+    async function initAuth() {
+      // Step 1: If URL has OAuth tokens in hash, manually set the session
+      const hash = window.location.hash
+      if (hash.includes('access_token')) {
+        const params = new URLSearchParams(hash.substring(1))
+        const accessToken = params.get('access_token')
+        const refreshToken = params.get('refresh_token')
+
+        if (accessToken && refreshToken) {
+          const { data, error } = await supabase.auth.setSession({
+            access_token: accessToken,
+            refresh_token: refreshToken,
+          })
+
+          if (error) {
+            console.error('Failed to set session from OAuth:', error.message)
+          } else if (data.session?.user) {
+            setUser(data.session.user)
+            await fetchProfile(data.session.user.id)
+            // Clean up the URL hash
+            window.history.replaceState(null, '', window.location.pathname)
+            return
+          }
+        }
+      }
+
+      // Step 2: Check for existing session in storage
+      const { data: { session } } = await supabase.auth.getSession()
+      if (session?.user) {
+        setUser(session.user)
+        await fetchProfile(session.user.id)
+      } else {
+        finishLoading()
+      }
+    }
+
+    // Listen for future auth changes (sign out, token refresh, etc.)
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null)
       if (session?.user) {
@@ -34,14 +70,7 @@ export function AuthProvider({ children }) {
       }
     })
 
-    // Check existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user) {
-        setUser(session.user)
-        fetchProfile(session.user.id)
-      }
-      // Don't finishLoading here if no session — onAuthStateChange may still fire
-    })
+    initAuth()
 
     return () => {
       clearTimeout(timeout)
