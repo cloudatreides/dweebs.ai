@@ -27,7 +27,7 @@ body {
 }
 
 .page-container {
-  max-width: 390px;
+  max-width: 1440px;
   min-height: 100dvh;
   margin: 0 auto;
   background: #0D0D0F;

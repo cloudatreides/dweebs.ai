@@ -211,7 +211,7 @@ export default function Landing() {
   const handleCTA = () => navigate(user ? '/home' : '/login')
 
   return (
-    <div style={{ background: '#0D0D0F', minHeight: '100dvh' }}>
+    <div style={{ background: '#0D0D0F', minHeight: '100dvh' }} className="max-w-[1440px] mx-auto">
 
       {/* ── HERO ── */}
       <section className="px-5 md:px-16 pt-12 pb-10">
