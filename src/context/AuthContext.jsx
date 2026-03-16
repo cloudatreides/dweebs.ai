@@ -42,8 +42,8 @@ export function AuthProvider({ children }) {
           } else if (data.session?.user) {
             setUser(data.session.user)
             await fetchProfile(data.session.user.id)
-            // Clean up the URL hash
-            window.history.replaceState(null, '', window.location.pathname)
+            // Clean up the URL hash and redirect to /home
+            window.location.replace('/home')
             return
           }
         }
