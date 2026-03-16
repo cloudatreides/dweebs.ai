@@ -573,7 +573,7 @@ export default function ChatView() {
       )}
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto px-4 py-2 flex flex-col gap-3" style={{ paddingBottom: 80 }}>
+      <div className="flex-1 overflow-y-auto px-4 py-2 flex flex-col gap-3 max-w-[800px]" style={{ paddingBottom: 80 }}>
         <AnimatePresence initial={false}>
           {messages.map((msg) => (
             <motion.div
