@@ -462,7 +462,7 @@ export const trendingWorlds = [
     characterIds: ['sukuna', 'eren', 'gojo'],
     scene: 'Sukuna and Eren have been court-ordered into group therapy. Gojo volunteered to be the therapist — mostly because he thought it would be funny.',
     remixCount: 6700,
-    tag: 'Most Remixed',
+    tag: 'Most Popular',
   },
   {
     id: 'world-5',

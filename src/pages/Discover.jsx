@@ -153,7 +153,7 @@ function CharDetailContent({ char, navigate, onClose, userId }) {
 
 function WorldCard({ world, characters, onClick }) {
   const chars = world.characterIds.map(id => characters.find(c => c.id === id)).filter(Boolean)
-  const tagColors = { 'Hot': '#EF4444', 'Trending': '#F59E0B', 'Most Remixed': '#7C3AED', 'Classic': '#06B6D4' }
+  const tagColors = { 'Hot': '#EF4444', 'Trending': '#F59E0B', 'Most Popular': '#7C3AED', 'Classic': '#06B6D4' }
   return (
     <button
       onClick={onClick}
@@ -184,7 +184,7 @@ function WorldCard({ world, characters, onClick }) {
       </div>
       <div className="flex items-center gap-1 text-[10px]" style={{ color: '#4B5563' }}>
         <Shuffle size={10} />
-        <span>{formatCount(world.remixCount)} remixes</span>
+        <span>{formatCount(world.remixCount)} tried</span>
       </div>
     </button>
   )
@@ -494,7 +494,7 @@ export default function Discover() {
       <div className="mb-5">
         <div className="flex items-center justify-between px-5 mb-3">
           <h2 className="text-sm font-semibold text-white">Trending Worlds</h2>
-          <span className="text-[11px]" style={{ color: '#6B7280' }}>Tap to remix</span>
+          <span className="text-[11px]" style={{ color: '#6B7280' }}>Tap to try</span>
         </div>
         <div className="overflow-hidden">
           <div
@@ -976,7 +976,7 @@ export default function Discover() {
         </div>
       </BottomSheet>
 
-      {/* World Detail / Remix Sheet */}
+      {/* World Detail Sheet */}
       <BottomSheet isOpen={!!selectedWorld} onClose={() => setSelectedWorld(null)}>
         {selectedWorld && (() => {
           const chars = selectedWorld.characterIds.map(id => allCharacters.find(c => c.id === id)).filter(Boolean)
@@ -998,7 +998,7 @@ export default function Discover() {
               </p>
               <div className="flex items-center justify-center gap-1 mb-4 text-xs" style={{ color: '#4B5563' }}>
                 <Shuffle size={12} />
-                <span>{formatCount(selectedWorld.remixCount)} remixes</span>
+                <span>{formatCount(selectedWorld.remixCount)} tried</span>
               </div>
               <div className="p-3 rounded-xl mb-5" style={{ background: '#1A1A1F' }}>
                 <p className="text-[11px] font-semibold tracking-widest uppercase mb-1.5" style={{ color: '#6B7280' }}>Scenario</p>
@@ -1032,7 +1032,7 @@ export default function Discover() {
                 ) : (
                   <>
                     <Shuffle size={16} />
-                    Remix this World
+                    Try this World
                   </>
                 )}
               </button>
