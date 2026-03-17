@@ -4,7 +4,7 @@ import { Search, Plus, X, ChevronLeft, Camera, Lock, Globe, MessageCircle, Arrow
 import { motion, AnimatePresence } from 'framer-motion'
 import { useCharacters } from '../context/CharacterContext'
 import { useAuth } from '../context/AuthContext'
-import { createChat, getUserChats, getChatMessages, addMessage } from '../lib/db'
+import { createChat, getUserChats, getChatMessages, addMessage, recordWorldTry } from '../lib/db'
 import { trendingWorlds } from '../data/mockData'
 import { generateCharacterProfile, generateCatchUpMessages, fetchCharacterImage } from '../lib/chatApi'
 import BottomNav from '../components/BottomNav'
@@ -339,6 +339,10 @@ export default function Discover() {
         scene: world.scene,
         characterIds: world.characterIds,
       })
+      // Award aura to world creator (ignore errors for hardcoded worlds)
+      if (world.dbId && user?.id) {
+        recordWorldTry(world.dbId, user.id).catch(() => {})
+      }
       setSelectedWorld(null)
       navigate(`/chat/${newChat.id}`)
     } catch (err) {

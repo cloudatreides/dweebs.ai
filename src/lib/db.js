@@ -147,6 +147,68 @@ export async function addMessage({ groupChatId, senderType, senderId, content })
   return data
 }
 
+// ============================================
+// SHARED WORLDS & AURA
+// ============================================
+
+export async function shareWorld({ creatorId, name, description, scene, characterIds }) {
+  const { data, error } = await supabase
+    .from('shared_worlds')
+    .insert({
+      creator_id: creatorId,
+      name,
+      description: description || '',
+      scene: scene || '',
+      character_ids: characterIds,
+    })
+    .select()
+    .single()
+
+  if (error) throw error
+  return data
+}
+
+export async function getSharedWorlds() {
+  const { data, error } = await supabase
+    .from('shared_worlds')
+    .select('*, profiles(display_name)')
+    .order('try_count', { ascending: false })
+    .limit(20)
+
+  if (error) throw error
+  return data
+}
+
+export async function getUserSharedWorlds(userId) {
+  const { data, error } = await supabase
+    .from('shared_worlds')
+    .select('*')
+    .eq('creator_id', userId)
+    .order('created_at', { ascending: false })
+
+  if (error) throw error
+  return data
+}
+
+export async function recordWorldTry(worldId, userId) {
+  const { error } = await supabase.rpc('record_world_try', {
+    world_id: worldId,
+    trying_user_id: userId,
+  })
+  if (error) throw error
+}
+
+export async function getUserAura(userId) {
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('aura')
+    .eq('id', userId)
+    .single()
+
+  if (error) throw error
+  return data?.aura || 0
+}
+
 export async function addMessages(messages) {
   const { data, error } = await supabase
     .from('messages')

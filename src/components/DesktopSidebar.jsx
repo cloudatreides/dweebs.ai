@@ -3,7 +3,8 @@ import { useNavigate, useLocation } from 'react-router-dom'
 import { Compass, MessageSquare, Plus, User, LogOut } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useCharacters } from '../context/CharacterContext'
-import { getUserChats } from '../lib/db'
+import { getUserChats, getUserAura } from '../lib/db'
+import { AuraBadge } from './AuraIcon'
 
 export default function DesktopSidebar() {
   const navigate = useNavigate()
@@ -14,13 +15,17 @@ export default function DesktopSidebar() {
   const isActive = (route) => path === route || path.startsWith(route + '/')
 
   const [chats, setChats] = useState([])
+  const [aura, setAura] = useState(0)
 
   useEffect(() => {
     if (!user) return
     getUserChats(user.id)
       .then(data => setChats(data))
       .catch(err => console.error('Sidebar: failed to load chats:', err))
-  }, [user, path]) // refetch when navigating (e.g. after creating a new chat)
+    getUserAura(user.id)
+      .then(val => setAura(val))
+      .catch(() => {})
+  }, [user, path])
 
   return (
     <div className="flex flex-col h-full w-full" style={{
@@ -33,6 +38,9 @@ export default function DesktopSidebar() {
           dweebs<span style={{ color: '#7C3AED' }}>.ai</span>
         </span>
         <p className="text-xs mt-1" style={{ color: '#4B5563' }}>Your characters are waiting</p>
+        <div className="mt-2">
+          <AuraBadge amount={aura} size="sm" />
+        </div>
       </div>
 
       {/* New Chat CTA */}

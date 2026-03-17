@@ -1,11 +1,13 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ArrowUp, Pause, ChevronLeft, Plus, Play, Search } from 'lucide-react'
+import { ArrowUp, Pause, ChevronLeft, Plus, Play, Search, Share2 } from 'lucide-react'
 import { getResponse } from '../data/mockResponses'
 import { getCharacterResponses, generateCatchUpMessages, generateNudgeMessage, generateKeepGoing } from '../lib/chatApi'
-import { getChat, getChatMessages, addMessage, addMessages, updateChat } from '../lib/db'
+import { getChat, getChatMessages, addMessage, addMessages, updateChat, shareWorld } from '../lib/db'
+import AuraIcon from '../components/AuraIcon'
 import { useCharacters } from '../context/CharacterContext'
+import { useAuth } from '../context/AuthContext'
 import BottomSheet from '../components/BottomSheet'
 import CharacterAvatar from '../components/CharacterAvatar'
 
@@ -59,6 +61,7 @@ export default function ChatView() {
   const { id } = useParams()
   const navigate = useNavigate()
   const { getCharacter, allCharacters } = useCharacters()
+  const { user } = useAuth()
   const bottomRef = useRef(null)
   const inputRef = useRef(null)
 
@@ -73,6 +76,10 @@ export default function ChatView() {
   const [promptSuggestions, setPromptSuggestions] = useState([])
   const [keepGoingActive, setKeepGoingActive] = useState(false)
   const [addCharSearch, setAddCharSearch] = useState('')
+  const [showShareSheet, setShowShareSheet] = useState(false)
+  const [shareDesc, setShareDesc] = useState('')
+  const [sharing, setSharing] = useState(false)
+  const [shareSuccess, setShareSuccess] = useState(false)
   const [loading, setLoading] = useState(true)
 
   // Load chat + messages from Supabase
@@ -584,6 +591,13 @@ export default function ChatView() {
             </button>
           )
         )}
+        <button
+          onClick={() => { setShareDesc(''); setShareSuccess(false); setShowShareSheet(true) }}
+          className="ml-1"
+          title="Share as World"
+        >
+          <Share2 size={17} color="#6B7280" />
+        </button>
         <button className="ml-1">
           <Pause size={18} color="#6B7280" />
         </button>
@@ -863,6 +877,122 @@ export default function ChatView() {
       {/* Upgrade Modal */}
       <BottomSheet isOpen={showUpgradeModal} onClose={() => setShowUpgradeModal(false)}>
         <UpgradeModal onClose={() => setShowUpgradeModal(false)} />
+      </BottomSheet>
+
+      {/* Share World Sheet */}
+      <BottomSheet isOpen={showShareSheet} onClose={() => setShowShareSheet(false)}>
+        <div className="px-5 pb-8 pt-2">
+          {shareSuccess ? (
+            <div className="text-center py-4">
+              <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-3"
+                style={{ background: '#22C55E22', border: '1.5px solid #22C55E44' }}>
+                <span className="text-3xl">✓</span>
+              </div>
+              <h2 className="text-lg font-bold text-white mb-1">World Shared!</h2>
+              <p className="text-sm mb-3" style={{ color: '#9CA3AF' }}>
+                Others can now try your world in Discover
+              </p>
+              <div className="flex items-center justify-center gap-2 mb-5">
+                <AuraIcon size={18} />
+                <span className="text-sm" style={{ color: '#A78BFA' }}>
+                  You'll earn <strong>+10 Aura</strong> each time someone tries it
+                </span>
+              </div>
+              <button
+                onClick={() => setShowShareSheet(false)}
+                className="w-full py-3.5 rounded-full font-semibold text-sm text-white"
+                style={{ background: '#7C3AED' }}
+              >
+                Done
+              </button>
+            </div>
+          ) : (
+            <>
+              <h2 className="text-lg font-bold text-white mb-0.5">Share as World</h2>
+              <p className="text-sm mb-4" style={{ color: '#9CA3AF' }}>
+                Let others try this character combo + scenario
+              </p>
+
+              {/* Preview */}
+              <div className="p-3 rounded-xl mb-4" style={{ background: '#1A1A1F' }}>
+                <div className="flex -space-x-2 mb-2">
+                  {chatCharacters.map((char, i) => char && (
+                    <div key={char.id} className="w-8 h-8 rounded-full overflow-hidden flex items-center justify-center text-sm border-2"
+                      style={{ background: char.color + '33', borderColor: '#1A1A1F', zIndex: chatCharacters.length - i }}>
+                      {char.avatar
+                        ? <img src={char.avatar} alt={char.name} className="w-full h-full object-cover" />
+                        : char.emoji}
+                    </div>
+                  ))}
+                </div>
+                <p className="text-sm font-semibold text-white">{chat?.name}</p>
+                {chat?.scene && (
+                  <p className="text-xs mt-1" style={{ color: '#6B7280' }}>✦ {chat.scene}</p>
+                )}
+              </div>
+
+              {/* Description */}
+              <div className="mb-4">
+                <p className="text-[11px] font-semibold tracking-widest uppercase mb-1.5" style={{ color: '#6B7280' }}>
+                  Description <span style={{ color: '#4B5563' }}>(what makes this world fun?)</span>
+                </p>
+                <textarea
+                  value={shareDesc}
+                  onChange={e => setShareDesc(e.target.value.slice(0, 120))}
+                  placeholder="e.g. Itachi and Elon debate survival strategies — chaos ensues"
+                  rows={2}
+                  className="w-full px-4 py-3 rounded-xl text-sm text-white outline-none resize-none"
+                  style={{ background: '#1A1A1F', border: '1px solid rgba(255,255,255,0.06)' }}
+                />
+                <p className="text-right text-[11px] mt-1" style={{ color: '#4B5563' }}>{shareDesc.length}/120</p>
+              </div>
+
+              {/* Aura info */}
+              <div className="flex items-center gap-2 p-3 rounded-xl mb-5" style={{ background: '#7C3AED11', border: '1px solid #7C3AED22' }}>
+                <AuraIcon size={20} />
+                <p className="text-xs" style={{ color: '#A78BFA' }}>
+                  Earn <strong>+10 Aura</strong> every time someone tries your world
+                </p>
+              </div>
+
+              <button
+                onClick={async () => {
+                  if (sharing || !chat) return
+                  setSharing(true)
+                  try {
+                    await shareWorld({
+                      creatorId: user?.id,
+                      name: chat.name,
+                      description: shareDesc,
+                      scene: chat.scene,
+                      characterIds: chatCharIds,
+                    })
+                    setShareSuccess(true)
+                  } catch (err) {
+                    console.error('Share failed:', err)
+                  } finally {
+                    setSharing(false)
+                  }
+                }}
+                disabled={sharing}
+                className="w-full py-4 rounded-full font-semibold text-white text-[15px] flex items-center justify-center gap-2 transition-opacity"
+                style={{ background: '#7C3AED', opacity: sharing ? 0.6 : 1 }}
+              >
+                {sharing ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    Sharing...
+                  </>
+                ) : (
+                  <>
+                    <Share2 size={16} />
+                    Share to Discover
+                  </>
+                )}
+              </button>
+            </>
+          )}
+        </div>
       </BottomSheet>
     </div>
   )
