@@ -239,6 +239,39 @@ export default function Discover() {
   const worldsRef = useRef(null)
   const fileInputRef = useRef(null)
 
+  // Auto-scroll worlds carousel
+  useEffect(() => {
+    const el = worldsRef.current
+    if (!el) return
+    let paused = false
+    let pauseTimer = null
+
+    const interval = setInterval(() => {
+      if (paused || !el) return
+      const card = el.querySelector('[data-world-card]')
+      if (!card) return
+      const cardWidth = card.offsetWidth + 16
+      const nextIdx = (activeWorldIdx + 1) % trendingWorlds.length
+      el.scrollTo({ left: nextIdx * cardWidth, behavior: 'smooth' })
+    }, 3500)
+
+    const handleInteraction = () => {
+      paused = true
+      clearTimeout(pauseTimer)
+      pauseTimer = setTimeout(() => { paused = false }, 8000)
+    }
+
+    el.addEventListener('pointerdown', handleInteraction)
+    el.addEventListener('wheel', handleInteraction)
+
+    return () => {
+      clearInterval(interval)
+      clearTimeout(pauseTimer)
+      el.removeEventListener('pointerdown', handleInteraction)
+      el.removeEventListener('wheel', handleInteraction)
+    }
+  }, [activeWorldIdx])
+
   // On login/mount: pre-generate catch-up messages for idle chats
   useEffect(() => {
     if (!user) return
