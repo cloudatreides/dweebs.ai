@@ -157,7 +157,7 @@ function WorldCard({ world, characters, onClick }) {
   return (
     <button
       onClick={onClick}
-      className="flex-shrink-0 w-[calc(100vw-56px)] md:w-[340px] p-4 rounded-2xl text-left flex flex-col gap-3"
+      className="flex-shrink-0 w-[280px] p-4 rounded-2xl text-left flex flex-col gap-3"
       style={{ background: '#1A1A1F', border: '1px solid rgba(255,255,255,0.04)' }}
     >
       <div className="flex items-center justify-between">
@@ -235,42 +235,7 @@ export default function Discover() {
   const [saving, setSaving] = useState(false)
   const [selectedWorld, setSelectedWorld] = useState(null)
   const [remixing, setRemixing] = useState(false)
-  const [activeWorldIdx, setActiveWorldIdx] = useState(0)
-  const worldsRef = useRef(null)
   const fileInputRef = useRef(null)
-
-  // Auto-scroll worlds carousel
-  useEffect(() => {
-    const el = worldsRef.current
-    if (!el) return
-    let paused = false
-    let pauseTimer = null
-
-    const interval = setInterval(() => {
-      if (paused || !el) return
-      const card = el.querySelector('[data-world-card]')
-      if (!card) return
-      const cardWidth = card.offsetWidth + 16
-      const nextIdx = (activeWorldIdx + 1) % trendingWorlds.length
-      el.scrollTo({ left: nextIdx * cardWidth, behavior: 'smooth' })
-    }, 3500)
-
-    const handleInteraction = () => {
-      paused = true
-      clearTimeout(pauseTimer)
-      pauseTimer = setTimeout(() => { paused = false }, 8000)
-    }
-
-    el.addEventListener('pointerdown', handleInteraction)
-    el.addEventListener('wheel', handleInteraction)
-
-    return () => {
-      clearInterval(interval)
-      clearTimeout(pauseTimer)
-      el.removeEventListener('pointerdown', handleInteraction)
-      el.removeEventListener('wheel', handleInteraction)
-    }
-  }, [activeWorldIdx])
 
   // On login/mount: pre-generate catch-up messages for idle chats
   useEffect(() => {
@@ -531,38 +496,19 @@ export default function Discover() {
           <h2 className="text-sm font-semibold text-white">Trending Worlds</h2>
           <span className="text-[11px]" style={{ color: '#6B7280' }}>Tap to remix</span>
         </div>
-        <div
-          ref={worldsRef}
-          className="flex gap-4 overflow-x-auto pl-5 pb-2 snap-x snap-mandatory"
-          style={{ scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch' }}
-          onScroll={(e) => {
-            const el = e.target
-            const card = el.querySelector('[data-world-card]')
-            const cardWidth = card?.offsetWidth || 300
-            const gap = 16
-            const idx = Math.round(el.scrollLeft / (cardWidth + gap))
-            setActiveWorldIdx(Math.min(idx, trendingWorlds.length - 1))
-          }}
-        >
-          {trendingWorlds.map((world, i) => (
-            <div key={world.id} className="snap-start" data-world-card style={{ paddingRight: i === trendingWorlds.length - 1 ? 20 : 0 }}>
-              <WorldCard world={world} characters={allCharacters} onClick={() => setSelectedWorld(world)} />
-            </div>
-          ))}
-        </div>
-        {/* Dot indicators */}
-        <div className="flex justify-center gap-1.5 mt-2">
-          {trendingWorlds.map((_, i) => (
-            <div
-              key={i}
-              className="rounded-full transition-all duration-200"
-              style={{
-                width: i === activeWorldIdx ? 16 : 6,
-                height: 6,
-                background: i === activeWorldIdx ? '#7C3AED' : '#374151',
-              }}
-            />
-          ))}
+        <div className="overflow-hidden">
+          <div
+            className="flex gap-4 worlds-marquee"
+            style={{ width: 'max-content' }}
+            onMouseEnter={e => e.currentTarget.style.animationPlayState = 'paused'}
+            onMouseLeave={e => e.currentTarget.style.animationPlayState = 'running'}
+          >
+            {[...trendingWorlds, ...trendingWorlds].map((world, i) => (
+              <div key={`${world.id}-${i}`} className="flex-shrink-0">
+                <WorldCard world={world} characters={allCharacters} onClick={() => setSelectedWorld(world)} />
+              </div>
+            ))}
+          </div>
         </div>
       </div>
 
