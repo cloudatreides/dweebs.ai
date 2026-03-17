@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { ArrowUp, Pause, ChevronLeft, Plus, Play, Search, Share2 } from 'lucide-react'
 import { getResponse } from '../data/mockResponses'
 import { getCharacterResponses, generateCatchUpMessages, generateNudgeMessage, generateKeepGoing } from '../lib/chatApi'
-import { getChat, getChatMessages, addMessage, addMessages, updateChat, shareWorld } from '../lib/db'
+import { getChat, getChatMessages, addMessage, addMessages, updateChat, shareWorld, checkDuplicateWorld } from '../lib/db'
 import AuraIcon from '../components/AuraIcon'
 import { useCharacters } from '../context/CharacterContext'
 import { useAuth } from '../context/AuthContext'
@@ -80,6 +80,7 @@ export default function ChatView() {
   const [shareDesc, setShareDesc] = useState('')
   const [sharing, setSharing] = useState(false)
   const [shareSuccess, setShareSuccess] = useState(false)
+  const [shareError, setShareError] = useState('')
   const [loading, setLoading] = useState(true)
 
   // Load chat + messages from Supabase
@@ -591,13 +592,15 @@ export default function ChatView() {
             </button>
           )
         )}
-        <button
-          onClick={() => { setShareDesc(''); setShareSuccess(false); setShowShareSheet(true) }}
-          className="ml-1"
-          title="Share as World"
-        >
-          <Share2 size={17} color="#6B7280" />
-        </button>
+        {chatCharIds.length >= 2 && (
+          <button
+            onClick={() => { setShareDesc(''); setShareSuccess(false); setShareError(''); setShowShareSheet(true) }}
+            className="ml-1"
+            title="Share as World"
+          >
+            <Share2 size={17} color="#6B7280" />
+          </button>
+        )}
         <button className="ml-1">
           <Pause size={18} color="#6B7280" />
         </button>
@@ -955,11 +958,29 @@ export default function ChatView() {
                 </p>
               </div>
 
+              {shareError && (
+                <p className="text-xs text-center mb-3" style={{ color: '#F87171' }}>{shareError}</p>
+              )}
+
               <button
                 onClick={async () => {
                   if (sharing || !chat) return
+                  setShareError('')
                   setSharing(true)
                   try {
+                    // Validate: solo chats can't be shared
+                    if (chatCharIds.length < 2) {
+                      setShareError('You need at least 2 characters to share a World.')
+                      setSharing(false)
+                      return
+                    }
+                    // Check for duplicate
+                    const dupe = await checkDuplicateWorld(chatCharIds)
+                    if (dupe) {
+                      setShareError(`A world with this exact character combo already exists ("${dupe.name}").`)
+                      setSharing(false)
+                      return
+                    }
                     await shareWorld({
                       creatorId: user?.id,
                       name: chat.name,
@@ -970,7 +991,7 @@ export default function ChatView() {
                     setShareSuccess(true)
                   } catch (err) {
                     console.error('Share failed:', err)
-                    alert('Share failed — have you run the Aura migration in Supabase? Check console for details.')
+                    setShareError(err.message || 'Share failed. Try again.')
                   } finally {
                     setSharing(false)
                   }

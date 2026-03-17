@@ -151,7 +151,26 @@ export async function addMessage({ groupChatId, senderType, senderId, content })
 // SHARED WORLDS & AURA
 // ============================================
 
+export async function checkDuplicateWorld(characterIds) {
+  const sorted = [...characterIds].sort()
+  const { data, error } = await supabase
+    .from('shared_worlds')
+    .select('id, name')
+
+  if (error) return null
+  // Check if any existing world has the exact same sorted character set
+  return (data || []).find(w => {
+    const wSorted = [...(w.character_ids || [])].sort()
+    return wSorted.length === sorted.length && wSorted.every((id, i) => id === sorted[i])
+  }) || null
+}
+
 export async function shareWorld({ creatorId, name, description, scene, characterIds }) {
+  // Validate: at least 2 characters
+  if (!characterIds || characterIds.length < 2) {
+    throw new Error('You need at least 2 characters to share a World.')
+  }
+
   const { data, error } = await supabase
     .from('shared_worlds')
     .insert({
