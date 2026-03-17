@@ -157,7 +157,7 @@ function WorldCard({ world, characters, onClick }) {
   return (
     <button
       onClick={onClick}
-      className="flex-shrink-0 w-[260px] p-4 rounded-2xl text-left flex flex-col gap-3"
+      className="flex-shrink-0 w-[calc(100vw-56px)] md:w-[340px] p-4 rounded-2xl text-left flex flex-col gap-3"
       style={{ background: '#1A1A1F', border: '1px solid rgba(255,255,255,0.04)' }}
     >
       <div className="flex items-center justify-between">
@@ -500,18 +500,19 @@ export default function Discover() {
         </div>
         <div
           ref={worldsRef}
-          className="flex gap-4 overflow-x-auto px-5 pb-2 snap-x snap-mandatory"
+          className="flex gap-4 overflow-x-auto pl-5 pb-2 snap-x snap-mandatory"
           style={{ scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch' }}
           onScroll={(e) => {
             const el = e.target
-            const cardWidth = el.firstChild?.offsetWidth || 260
+            const card = el.querySelector('[data-world-card]')
+            const cardWidth = card?.offsetWidth || 300
             const gap = 16
             const idx = Math.round(el.scrollLeft / (cardWidth + gap))
             setActiveWorldIdx(Math.min(idx, trendingWorlds.length - 1))
           }}
         >
-          {trendingWorlds.map(world => (
-            <div key={world.id} className="snap-start">
+          {trendingWorlds.map((world, i) => (
+            <div key={world.id} className="snap-start" data-world-card style={{ paddingRight: i === trendingWorlds.length - 1 ? 20 : 0 }}>
               <WorldCard world={world} characters={allCharacters} onClick={() => setSelectedWorld(world)} />
             </div>
           ))}
