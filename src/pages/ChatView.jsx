@@ -21,6 +21,31 @@ function parseMention(text, charIds, getCharacter) {
   return null
 }
 
+// Trigger images — keyword → image path mapping per character
+const TRIGGER_IMAGES = {
+  itachi: [{ keyword: 'amaterasu', image: '/avatars/amaterasu.jpg', caption: 'Amaterasu' }],
+}
+
+// Check if a message should show a trigger image
+function getTriggerImage(text, characterId) {
+  const triggers = TRIGGER_IMAGES[characterId]
+  if (!triggers) return null
+  const lower = text.toLowerCase()
+  return triggers.find(t => lower.includes(t.keyword)) || null
+}
+
+// Check if user message triggers any character's image
+function getUserTriggerImage(text, characterIds) {
+  const lower = text.toLowerCase()
+  for (const charId of characterIds) {
+    const triggers = TRIGGER_IMAGES[charId]
+    if (!triggers) continue
+    const match = triggers.find(t => lower.includes(t.keyword))
+    if (match) return match
+  }
+  return null
+}
+
 // Highlight @mentions in message text
 function renderWithMentions(text, isUserMsg = false) {
   return text.split(/(@\w+)/g).map((part, i) =>
@@ -593,6 +618,7 @@ export default function ChatView() {
               {/* Character message */}
               {msg.type === 'character' && (() => {
                 const char = getCharacter(msg.characterId)
+                const trigger = char ? getTriggerImage(msg.text, msg.characterId) : null
                 return char ? (
                   <div className="flex flex-col gap-1 max-w-[78%]">
                     <div className="flex items-center gap-1.5">
@@ -603,6 +629,11 @@ export default function ChatView() {
                       </div>
                       <span className="text-[11px] font-semibold" style={{ color: char.color }}>{char.name}</span>
                     </div>
+                    {trigger && (
+                      <div className="rounded-2xl rounded-tl-none overflow-hidden" style={{ background: '#1A1A1F' }}>
+                        <img src={trigger.image} alt={trigger.caption} className="w-full max-w-[320px] object-cover" />
+                      </div>
+                    )}
                     <div className="px-3 py-2.5 rounded-2xl rounded-tl-none text-sm leading-relaxed" style={{ background: '#1A1A1F', color: '#E5E7EB' }}>
                       {renderWithMentions(msg.text)}
                     </div>
@@ -611,11 +642,21 @@ export default function ChatView() {
               })()}
 
               {/* User message */}
-              {msg.type === 'user' && (
-                <div className="px-3 py-2.5 rounded-2xl rounded-tr-none text-sm leading-relaxed max-w-[78%]" style={{ background: '#7C3AED', color: 'white' }}>
-                  {renderWithMentions(msg.text, true)}
-                </div>
-              )}
+              {msg.type === 'user' && (() => {
+                const trigger = getUserTriggerImage(msg.text, chatCharIds)
+                return (
+                  <div className="flex flex-col items-end gap-1 max-w-[78%]">
+                    <div className="px-3 py-2.5 rounded-2xl rounded-tr-none text-sm leading-relaxed" style={{ background: '#7C3AED', color: 'white' }}>
+                      {renderWithMentions(msg.text, true)}
+                    </div>
+                    {trigger && (
+                      <div className="rounded-2xl rounded-tr-none overflow-hidden" style={{ background: '#1A1A1F' }}>
+                        <img src={trigger.image} alt={trigger.caption} className="w-full max-w-[320px] object-cover" />
+                      </div>
+                    )}
+                  </div>
+                )
+              })()}
             </motion.div>
           ))}
         </AnimatePresence>
