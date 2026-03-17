@@ -618,7 +618,13 @@ export default function ChatView() {
               {/* Character message */}
               {msg.type === 'character' && (() => {
                 const char = getCharacter(msg.characterId)
-                const trigger = char ? getTriggerImage(msg.text, msg.characterId) : null
+                // Check trigger in this message OR in the previous user message
+                const msgIdx = messages.indexOf(msg)
+                const prevMsg = msgIdx > 0 ? messages[msgIdx - 1] : null
+                const trigger = char ? (
+                  getTriggerImage(msg.text, msg.characterId) ||
+                  (prevMsg && prevMsg.type === 'user' ? getTriggerImage(prevMsg.text, msg.characterId) : null)
+                ) : null
                 return char ? (
                   <div className="flex flex-col gap-1 max-w-[78%]">
                     <div className="flex items-center gap-1.5">
@@ -642,21 +648,11 @@ export default function ChatView() {
               })()}
 
               {/* User message */}
-              {msg.type === 'user' && (() => {
-                const trigger = getUserTriggerImage(msg.text, chatCharIds)
-                return (
-                  <div className="flex flex-col items-end gap-1 max-w-[78%]">
-                    <div className="px-3 py-2.5 rounded-2xl rounded-tr-none text-sm leading-relaxed" style={{ background: '#7C3AED', color: 'white' }}>
-                      {renderWithMentions(msg.text, true)}
-                    </div>
-                    {trigger && (
-                      <div className="rounded-2xl rounded-tr-none overflow-hidden" style={{ background: '#1A1A1F' }}>
-                        <img src={trigger.image} alt={trigger.caption} className="w-full max-w-[320px] object-cover" />
-                      </div>
-                    )}
-                  </div>
-                )
-              })()}
+              {msg.type === 'user' && (
+                <div className="px-3 py-2.5 rounded-2xl rounded-tr-none text-sm leading-relaxed max-w-[78%]" style={{ background: '#7C3AED', color: 'white' }}>
+                  {renderWithMentions(msg.text, true)}
+                </div>
+              )}
             </motion.div>
           ))}
         </AnimatePresence>
