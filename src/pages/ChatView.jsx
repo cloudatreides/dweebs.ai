@@ -970,6 +970,7 @@ export default function ChatView() {
                     setShareSuccess(true)
                   } catch (err) {
                     console.error('Share failed:', err)
+                    alert('Share failed — have you run the Aura migration in Supabase? Check console for details.')
                   } finally {
                     setSharing(false)
                   }

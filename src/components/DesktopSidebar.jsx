@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
-import { Compass, MessageSquare, Plus, User, LogOut } from 'lucide-react'
+import { Compass, MessageSquare, Plus, User, LogOut, ChevronUp, Gift, Info } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useCharacters } from '../context/CharacterContext'
 import { getUserChats, getUserAura } from '../lib/db'
@@ -16,6 +16,7 @@ export default function DesktopSidebar() {
 
   const [chats, setChats] = useState([])
   const [aura, setAura] = useState(0)
+  const [auraOpen, setAuraOpen] = useState(false)
 
   useEffect(() => {
     if (!user) return
@@ -38,9 +39,6 @@ export default function DesktopSidebar() {
           dweebs<span style={{ color: '#7C3AED' }}>.ai</span>
         </span>
         <p className="text-xs mt-1" style={{ color: '#4B5563' }}>Your characters are waiting</p>
-        <div className="mt-2">
-          <AuraBadge amount={aura} size="sm" />
-        </div>
       </div>
 
       {/* New Chat CTA */}
@@ -131,8 +129,94 @@ export default function DesktopSidebar() {
         </div>
       </div>
 
-      {/* Logout */}
+      {/* Aura + Logout */}
       <div className="px-3 pb-5 pt-3" style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+        {/* Aura Card */}
+        <div className="relative mb-2">
+          <button
+            onClick={() => setAuraOpen(o => !o)}
+            className="flex items-center justify-between w-full px-3 py-2.5 rounded-xl transition-all"
+            style={{ background: auraOpen ? '#7C3AED18' : 'transparent', border: auraOpen ? '1px solid #7C3AED33' : '1px solid transparent' }}
+          >
+            <div className="flex items-center gap-2.5">
+              <AuraIcon size={18} />
+              <span className="text-sm font-semibold" style={{ color: '#A78BFA' }}>{aura.toLocaleString()} Aura</span>
+            </div>
+            <ChevronUp
+              size={14}
+              color="#6B7280"
+              className="transition-transform"
+              style={{ transform: auraOpen ? 'rotate(0deg)' : 'rotate(180deg)' }}
+            />
+          </button>
+
+          {/* Aura Popover */}
+          {auraOpen && (
+            <div
+              className="absolute bottom-full left-0 right-0 mb-2 rounded-xl p-4 flex flex-col gap-3"
+              style={{ background: '#1A1A1F', border: '1px solid rgba(255,255,255,0.08)', boxShadow: '0 -8px 24px rgba(0,0,0,0.4)' }}
+            >
+              {/* What is Aura */}
+              <div className="flex items-start gap-2.5">
+                <Info size={14} color="#6B7280" className="mt-0.5 flex-shrink-0" />
+                <div>
+                  <p className="text-xs font-semibold text-white mb-0.5">What is Aura?</p>
+                  <p className="text-[11px] leading-relaxed" style={{ color: '#9CA3AF' }}>
+                    Share Worlds to Discover. When others try your worlds, you earn Aura. Redeem for Pro access.
+                  </p>
+                </div>
+              </div>
+
+              <div className="h-px" style={{ background: 'rgba(255,255,255,0.06)' }} />
+
+              {/* Rewards */}
+              <div>
+                <p className="text-[10px] font-semibold tracking-widest uppercase mb-2" style={{ color: '#6B7280' }}>Redeem</p>
+                <div className="flex flex-col gap-1.5">
+                  {[
+                    { label: '1 Day Pro', cost: 500 },
+                    { label: '1 Week Pro', cost: 2000 },
+                    { label: '1 Month Pro', cost: 6000 },
+                  ].map(reward => {
+                    const canAfford = aura >= reward.cost
+                    return (
+                      <button
+                        key={reward.label}
+                        disabled={!canAfford}
+                        className="flex items-center justify-between px-3 py-2 rounded-lg transition-all"
+                        style={{
+                          background: canAfford ? '#7C3AED18' : '#0D0D0F',
+                          border: canAfford ? '1px solid #7C3AED44' : '1px solid rgba(255,255,255,0.04)',
+                          opacity: canAfford ? 1 : 0.5,
+                          cursor: canAfford ? 'pointer' : 'not-allowed',
+                        }}
+                      >
+                        <div className="flex items-center gap-2">
+                          <Gift size={13} color={canAfford ? '#A78BFA' : '#4B5563'} />
+                          <span className="text-xs font-medium" style={{ color: canAfford ? 'white' : '#6B7280' }}>{reward.label}</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <AuraIcon size={12} color={canAfford ? '#A78BFA' : '#4B5563'} />
+                          <span className="text-[11px] font-medium" style={{ color: canAfford ? '#A78BFA' : '#4B5563' }}>
+                            {reward.cost.toLocaleString()}
+                          </span>
+                        </div>
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+
+              {/* Earn more */}
+              <div className="flex items-center gap-2 px-2 py-1.5 rounded-lg" style={{ background: '#7C3AED11' }}>
+                <span className="text-[11px]" style={{ color: '#9CA3AF' }}>
+                  +10 per try on your worlds · Bonuses at 50 & 200 tries
+                </span>
+              </div>
+            </div>
+          )}
+        </div>
+
         <button
           onClick={async () => { await signOut(); navigate('/') }}
           className="flex items-center gap-3 px-3 py-2.5 rounded-xl w-full text-left transition-all hover:opacity-80"
