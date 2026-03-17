@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
-import { ChevronLeft, Plus, X, Sparkles } from 'lucide-react'
+import { ChevronLeft, Plus, X, Sparkles, Search } from 'lucide-react'
 import { SCENE_TEMPLATES } from '../data/sceneTemplates'
 import { useAuth } from '../context/AuthContext'
 import { useCharacters } from '../context/CharacterContext'
@@ -22,6 +22,7 @@ export default function NewChat() {
   const [scene, setScene] = useState('')
   const [showPicker, setShowPicker] = useState(false)
   const [creating, setCreating] = useState(false)
+  const [charSearch, setCharSearch] = useState('')
 
   // Set initial group name if preselected
   useEffect(() => {
@@ -202,11 +203,26 @@ export default function NewChat() {
       </div>
 
       {/* Character Picker Sheet */}
-      <BottomSheet isOpen={showPicker} onClose={() => setShowPicker(false)}>
+      <BottomSheet isOpen={showPicker} onClose={() => { setShowPicker(false); setCharSearch('') }}>
         <div className="px-5 pb-8 pt-2">
-          <h2 className="text-lg font-bold text-white mb-4">Add Character</h2>
+          <h2 className="text-lg font-bold text-white mb-3">Add Character</h2>
+          <div className="relative mb-4">
+            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: '#6B7280' }} />
+            <input
+              type="text"
+              placeholder="Search characters..."
+              value={charSearch}
+              onChange={e => setCharSearch(e.target.value)}
+              className="w-full pl-9 pr-3 py-2.5 rounded-xl text-sm text-white placeholder:text-gray-500 outline-none"
+              style={{ background: '#1A1A1F' }}
+            />
+          </div>
           <div className="flex flex-col gap-3">
-            {available.map(char => (
+            {available.filter(c => {
+              if (!charSearch.trim()) return true
+              const q = charSearch.toLowerCase()
+              return c.name.toLowerCase().includes(q) || c.fandom?.toLowerCase().includes(q) || c.tags?.some(t => t.toLowerCase().includes(q))
+            }).map(char => (
               <button
                 key={char.id}
                 onClick={() => addChar(char.id)}

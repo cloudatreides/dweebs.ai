@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ArrowUp, Pause, ChevronLeft, Plus, Play } from 'lucide-react'
+import { ArrowUp, Pause, ChevronLeft, Plus, Play, Search } from 'lucide-react'
 import { getResponse } from '../data/mockResponses'
 import { getCharacterResponses, generateCatchUpMessages, generateNudgeMessage, generateKeepGoing } from '../lib/chatApi'
 import { getChat, getChatMessages, addMessage, addMessages, updateChat } from '../lib/db'
@@ -72,6 +72,7 @@ export default function ChatView() {
   const [mentionSuggestions, setMentionSuggestions] = useState([])
   const [promptSuggestions, setPromptSuggestions] = useState([])
   const [keepGoingActive, setKeepGoingActive] = useState(false)
+  const [addCharSearch, setAddCharSearch] = useState('')
   const [loading, setLoading] = useState(true)
 
   // Load chat + messages from Supabase
@@ -797,14 +798,29 @@ export default function ChatView() {
       </div>
 
       {/* Add to Chat Sheet */}
-      <BottomSheet isOpen={showAddSheet} onClose={() => setShowAddSheet(false)}>
+      <BottomSheet isOpen={showAddSheet} onClose={() => { setShowAddSheet(false); setAddCharSearch('') }}>
         <div className="px-5 pb-8 pt-2">
           <h2 className="text-lg font-bold text-white mb-0.5">Add to Chat</h2>
-          <p className="text-sm mb-4" style={{ color: '#9CA3AF' }}>
+          <p className="text-sm mb-3" style={{ color: '#9CA3AF' }}>
             Who joins {chatCharacters[0]?.name}'s conversation?
           </p>
+          <div className="relative mb-4">
+            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: '#6B7280' }} />
+            <input
+              type="text"
+              placeholder="Search characters..."
+              value={addCharSearch}
+              onChange={e => setAddCharSearch(e.target.value)}
+              className="w-full pl-9 pr-3 py-2.5 rounded-xl text-sm text-white placeholder:text-gray-500 outline-none"
+              style={{ background: '#1A1A1F' }}
+            />
+          </div>
           <div className="flex flex-col gap-3">
-            {availableToAdd.map(char => (
+            {availableToAdd.filter(c => {
+              if (!addCharSearch.trim()) return true
+              const q = addCharSearch.toLowerCase()
+              return c.name.toLowerCase().includes(q) || c.fandom?.toLowerCase().includes(q) || c.tags?.some(t => t.toLowerCase().includes(q))
+            }).map(char => (
               <div key={char.id} className="flex items-center gap-3">
                 <CharacterAvatar character={char} size={40} />
                 <div className="flex-1">
