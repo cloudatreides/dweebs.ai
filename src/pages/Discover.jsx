@@ -235,6 +235,8 @@ export default function Discover() {
   const [saving, setSaving] = useState(false)
   const [selectedWorld, setSelectedWorld] = useState(null)
   const [remixing, setRemixing] = useState(false)
+  const [activeWorldIdx, setActiveWorldIdx] = useState(0)
+  const worldsRef = useRef(null)
   const fileInputRef = useRef(null)
 
   // On login/mount: pre-generate catch-up messages for idle chats
@@ -490,15 +492,42 @@ export default function Discover() {
         </div>
       </div>
 
-      {/* Trending Worlds */}
-      <div className="mb-4">
+      {/* Trending Worlds Carousel */}
+      <div className="mb-5">
         <div className="flex items-center justify-between px-5 mb-3">
           <h2 className="text-sm font-semibold text-white">Trending Worlds</h2>
           <span className="text-[11px]" style={{ color: '#6B7280' }}>Tap to remix</span>
         </div>
-        <div className="flex gap-3 overflow-x-auto px-5 pb-1" style={{ scrollbarWidth: 'none' }}>
+        <div
+          ref={worldsRef}
+          className="flex gap-4 overflow-x-auto px-5 pb-2 snap-x snap-mandatory"
+          style={{ scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch' }}
+          onScroll={(e) => {
+            const el = e.target
+            const cardWidth = el.firstChild?.offsetWidth || 260
+            const gap = 16
+            const idx = Math.round(el.scrollLeft / (cardWidth + gap))
+            setActiveWorldIdx(Math.min(idx, trendingWorlds.length - 1))
+          }}
+        >
           {trendingWorlds.map(world => (
-            <WorldCard key={world.id} world={world} characters={allCharacters} onClick={() => setSelectedWorld(world)} />
+            <div key={world.id} className="snap-start">
+              <WorldCard world={world} characters={allCharacters} onClick={() => setSelectedWorld(world)} />
+            </div>
+          ))}
+        </div>
+        {/* Dot indicators */}
+        <div className="flex justify-center gap-1.5 mt-2">
+          {trendingWorlds.map((_, i) => (
+            <div
+              key={i}
+              className="rounded-full transition-all duration-200"
+              style={{
+                width: i === activeWorldIdx ? 16 : 6,
+                height: 6,
+                background: i === activeWorldIdx ? '#7C3AED' : '#374151',
+              }}
+            />
           ))}
         </div>
       </div>
