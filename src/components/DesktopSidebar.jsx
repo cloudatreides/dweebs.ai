@@ -132,7 +132,7 @@ export default function DesktopSidebar() {
       {/* Aura + Logout */}
       <div className="px-3 pb-5 pt-3" style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
         {/* Aura Card */}
-        <div className="relative mb-2">
+        <div className="relative mb-2 z-50">
           <button
             onClick={() => setAuraOpen(o => !o)}
             className="flex items-center justify-between w-full px-3 py-2.5 rounded-xl transition-all"
@@ -153,8 +153,8 @@ export default function DesktopSidebar() {
           {/* Aura Popover */}
           {auraOpen && (
             <div
-              className="absolute bottom-full left-0 right-0 mb-2 rounded-xl p-4 flex flex-col gap-3"
-              style={{ background: '#1A1A1F', border: '1px solid rgba(255,255,255,0.08)', boxShadow: '0 -8px 24px rgba(0,0,0,0.4)' }}
+              className="absolute bottom-full left-0 right-0 mb-2 rounded-xl p-4 flex flex-col gap-3 z-50"
+              style={{ background: '#1E1E26', border: '1px solid rgba(255,255,255,0.1)', boxShadow: '0 -8px 32px rgba(0,0,0,0.7)' }}
             >
               {/* What is Aura */}
               <div className="flex items-start gap-2.5">
