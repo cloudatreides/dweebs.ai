@@ -1,10 +1,11 @@
 import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Search, Plus, X, ChevronLeft, Camera, Lock, Globe, MessageCircle, ArrowUpDown, Sparkles, Pencil } from 'lucide-react'
+import { Search, Plus, X, ChevronLeft, Camera, Lock, Globe, MessageCircle, ArrowUpDown, Sparkles, Pencil, Shuffle } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useCharacters } from '../context/CharacterContext'
 import { useAuth } from '../context/AuthContext'
 import { createChat, getUserChats, getChatMessages, addMessage } from '../lib/db'
+import { trendingWorlds } from '../data/mockData'
 import { generateCharacterProfile, generateCatchUpMessages, fetchCharacterImage } from '../lib/chatApi'
 import BottomNav from '../components/BottomNav'
 import BottomSheet from '../components/BottomSheet'
@@ -150,6 +151,45 @@ function CharDetailContent({ char, navigate, onClose, userId }) {
   )
 }
 
+function WorldCard({ world, characters, onClick }) {
+  const chars = world.characterIds.map(id => characters.find(c => c.id === id)).filter(Boolean)
+  const tagColors = { 'Hot': '#EF4444', 'Trending': '#F59E0B', 'Most Remixed': '#7C3AED', 'Classic': '#06B6D4' }
+  return (
+    <button
+      onClick={onClick}
+      className="flex-shrink-0 w-[260px] p-4 rounded-2xl text-left flex flex-col gap-3"
+      style={{ background: '#1A1A1F', border: '1px solid rgba(255,255,255,0.04)' }}
+    >
+      <div className="flex items-center justify-between">
+        <div className="flex -space-x-2">
+          {chars.map((char, i) => (
+            <div key={char.id} className="w-9 h-9 rounded-full overflow-hidden flex items-center justify-center text-sm border-2"
+              style={{ background: char.color + '33', borderColor: '#1A1A1F', zIndex: chars.length - i }}>
+              {char.avatar
+                ? <img src={char.avatar} alt={char.name} className="w-full h-full object-cover" />
+                : char.emoji}
+            </div>
+          ))}
+        </div>
+        {world.tag && (
+          <span className="text-[10px] px-2 py-0.5 rounded-full font-medium"
+            style={{ background: (tagColors[world.tag] || '#6B7280') + '22', color: tagColors[world.tag] || '#6B7280' }}>
+            {world.tag}
+          </span>
+        )}
+      </div>
+      <div>
+        <p className="font-semibold text-sm text-white mb-1">{world.name}</p>
+        <p className="text-xs leading-relaxed line-clamp-2" style={{ color: '#9CA3AF' }}>{world.description}</p>
+      </div>
+      <div className="flex items-center gap-1 text-[10px]" style={{ color: '#4B5563' }}>
+        <Shuffle size={10} />
+        <span>{formatCount(world.remixCount)} remixes</span>
+      </div>
+    </button>
+  )
+}
+
 const COLOR_OPTIONS = ['#00E5FF','#FF69B4','#FF8C00','#FFD700','#A78BFA','#FF4444','#22C55E','#F59E0B','#EC4899','#06B6D4','#8B5CF6','#EF4444']
 
 const TRAIT_SUGGESTIONS = ['Dreamy','Fierce','Determined','Loyal','Chaotic','Soft','Mysterious','Energetic','Wise','Funny','Emotional','Fearless']
@@ -193,6 +233,8 @@ export default function Discover() {
   const [generating, setGenerating] = useState(false)
   const [genError, setGenError] = useState('')
   const [saving, setSaving] = useState(false)
+  const [selectedWorld, setSelectedWorld] = useState(null)
+  const [remixing, setRemixing] = useState(false)
   const fileInputRef = useRef(null)
 
   // On login/mount: pre-generate catch-up messages for idle chats
@@ -281,6 +323,29 @@ export default function Discover() {
     setShowCreateSheet(false)
     setCreateStep(1)
     setGenError('')
+  }
+
+  const handleRemix = async (world) => {
+    if (remixing) return
+    setRemixing(true)
+    try {
+      const charNames = world.characterIds.map(id => {
+        const c = allCharacters.find(ch => ch.id === id)
+        return c?.name.split(' ')[0]
+      }).filter(Boolean)
+      const newChat = await createChat({
+        userId: user?.id,
+        name: charNames.join(' × '),
+        scene: world.scene,
+        characterIds: world.characterIds,
+      })
+      setSelectedWorld(null)
+      navigate(`/chat/${newChat.id}`)
+    } catch (err) {
+      console.error('Remix failed:', err)
+    } finally {
+      setRemixing(false)
+    }
   }
 
   const handleAiGenerate = async () => {
@@ -422,6 +487,19 @@ export default function Discover() {
               ))}
             </div>
           )}
+        </div>
+      </div>
+
+      {/* Trending Worlds */}
+      <div className="mb-4">
+        <div className="flex items-center justify-between px-5 mb-3">
+          <h2 className="text-sm font-semibold text-white">Trending Worlds</h2>
+          <span className="text-[11px]" style={{ color: '#6B7280' }}>Tap to remix</span>
+        </div>
+        <div className="flex gap-3 overflow-x-auto px-5 pb-1" style={{ scrollbarWidth: 'none' }}>
+          {trendingWorlds.map(world => (
+            <WorldCard key={world.id} world={world} characters={allCharacters} onClick={() => setSelectedWorld(world)} />
+          ))}
         </div>
       </div>
 
@@ -887,6 +965,71 @@ export default function Discover() {
             )}
           </AnimatePresence>
         </div>
+      </BottomSheet>
+
+      {/* World Detail / Remix Sheet */}
+      <BottomSheet isOpen={!!selectedWorld} onClose={() => setSelectedWorld(null)}>
+        {selectedWorld && (() => {
+          const chars = selectedWorld.characterIds.map(id => allCharacters.find(c => c.id === id)).filter(Boolean)
+          return (
+            <div className="px-5 pb-8 pt-2">
+              <div className="flex justify-center -space-x-3 mb-4">
+                {chars.map((char, i) => (
+                  <div key={char.id} className="w-14 h-14 rounded-full overflow-hidden flex items-center justify-center text-2xl border-3"
+                    style={{ background: char.color + '33', border: `3px solid #0D0D0F`, zIndex: chars.length - i }}>
+                    {char.avatar
+                      ? <img src={char.avatar} alt={char.name} className="w-full h-full object-cover" />
+                      : char.emoji}
+                  </div>
+                ))}
+              </div>
+              <h2 className="text-xl font-bold text-white text-center mb-1">{selectedWorld.name}</h2>
+              <p className="text-xs text-center mb-4" style={{ color: '#6B7280' }}>
+                {chars.map(c => c.name).join(' × ')}
+              </p>
+              <div className="flex items-center justify-center gap-1 mb-4 text-xs" style={{ color: '#4B5563' }}>
+                <Shuffle size={12} />
+                <span>{formatCount(selectedWorld.remixCount)} remixes</span>
+              </div>
+              <div className="p-3 rounded-xl mb-5" style={{ background: '#1A1A1F' }}>
+                <p className="text-[11px] font-semibold tracking-widest uppercase mb-1.5" style={{ color: '#6B7280' }}>Scenario</p>
+                <p className="text-sm leading-relaxed" style={{ color: '#E5E7EB' }}>{selectedWorld.scene}</p>
+              </div>
+              <div className="flex flex-wrap justify-center gap-2 mb-5">
+                {chars.map(char => (
+                  <div key={char.id} className="flex items-center gap-2 px-3 py-1.5 rounded-full"
+                    style={{ background: char.color + '15', border: `1px solid ${char.color}33` }}>
+                    <div className="w-5 h-5 rounded-full overflow-hidden flex items-center justify-center text-xs"
+                      style={{ background: char.color + '33' }}>
+                      {char.avatar
+                        ? <img src={char.avatar} alt={char.name} className="w-full h-full object-cover" />
+                        : char.emoji}
+                    </div>
+                    <span className="text-xs font-medium" style={{ color: char.color }}>{char.name.split(' ')[0]}</span>
+                  </div>
+                ))}
+              </div>
+              <button
+                onClick={() => handleRemix(selectedWorld)}
+                disabled={remixing}
+                className="w-full py-4 rounded-full font-semibold text-white text-[15px] flex items-center justify-center gap-2 transition-opacity"
+                style={{ background: '#7C3AED', opacity: remixing ? 0.6 : 1 }}
+              >
+                {remixing ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    Creating...
+                  </>
+                ) : (
+                  <>
+                    <Shuffle size={16} />
+                    Remix this World
+                  </>
+                )}
+              </button>
+            </div>
+          )
+        })()}
       </BottomSheet>
 
       <BottomNav />

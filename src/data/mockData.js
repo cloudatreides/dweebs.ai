@@ -427,6 +427,63 @@ Quirks: Grins through brutal challenges — fans call him "Mr. Smiley". Has a pl
   },
 ]
 
+export const trendingWorlds = [
+  {
+    id: 'world-1',
+    name: 'Survival Showdown',
+    description: 'Itachi and Elon are the last two standing. One has ninjutsu, the other has rockets.',
+    characterIds: ['itachi', 'elon'],
+    scene: 'Itachi and Elon are the last two standing in a post-apocalyptic survival scenario. Resources are scarce. They must decide whether to team up or compete.',
+    remixCount: 4200,
+    tag: 'Hot',
+  },
+  {
+    id: 'world-2',
+    name: 'Anime Gym Arc',
+    description: 'Goku, Amotti and Levi argue about who has the best training regimen.',
+    characterIds: ['goku', 'amotti', 'levi'],
+    scene: 'The three meet at a gym. Each thinks their training method is superior. Goku wants to spar, Amotti wants CrossFit, Levi wants discipline drills.',
+    remixCount: 3800,
+    tag: 'Trending',
+  },
+  {
+    id: 'world-3',
+    name: 'Pop Divas Unite',
+    description: 'Taylor, Ariana and Sabrina plan a surprise triple-headliner festival set.',
+    characterIds: ['taylor', 'ariana', 'sabrina'],
+    scene: 'Three pop stars are secretly planning a surprise triple-headliner set at a music festival. They need to pick songs, resolve creative differences, and keep it under wraps.',
+    remixCount: 5100,
+    tag: 'Hot',
+  },
+  {
+    id: 'world-4',
+    name: 'Villain Therapy',
+    description: 'Sukuna and Eren are forced into a group therapy session. Gojo is the therapist.',
+    characterIds: ['sukuna', 'eren', 'gojo'],
+    scene: 'Sukuna and Eren have been court-ordered into group therapy. Gojo volunteered to be the therapist — mostly because he thought it would be funny.',
+    remixCount: 6700,
+    tag: 'Most Remixed',
+  },
+  {
+    id: 'world-5',
+    name: 'K-pop House',
+    description: 'Jimin, Lisa and Jennie share a house for a week. Cameras are rolling.',
+    characterIds: ['jimin', 'lisa', 'jennie'],
+    scene: 'Three K-pop idols are living together in a shared house for a reality show. No managers, no scripts — just vibes, cooking disasters, and late-night confessions.',
+    remixCount: 4500,
+    tag: 'Trending',
+  },
+  {
+    id: 'world-6',
+    name: 'Pirate vs Ninja',
+    description: 'Luffy and Naruto debate whose crew would win in an all-out war.',
+    characterIds: ['luffy', 'naruto'],
+    scene: 'Luffy and Naruto meet at a ramen stand. The conversation quickly turns into a heated but friendly debate about whose crew would win in a war — Straw Hats vs Hidden Leaf.',
+    remixCount: 3200,
+    tag: 'Classic',
+  },
+]
+
 export const mockChats = [
   {
     id: '1',
