@@ -4,7 +4,7 @@ import { Compass, MessageSquare, Plus, User, LogOut, ChevronUp, Gift, Info } fro
 import { useAuth } from '../context/AuthContext'
 import { useCharacters } from '../context/CharacterContext'
 import { getUserChats, getUserAura } from '../lib/db'
-import { AuraBadge } from './AuraIcon'
+import AuraIcon from './AuraIcon'
 
 export default function DesktopSidebar() {
   const navigate = useNavigate()

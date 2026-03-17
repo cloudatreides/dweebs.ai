@@ -164,7 +164,10 @@ export async function shareWorld({ creatorId, name, description, scene, characte
     .select()
     .single()
 
-  if (error) throw error
+  if (error) {
+    console.error('shareWorld error:', error.message)
+    throw new Error(error.message || 'Failed to share world. Run the Aura migration first.')
+  }
   return data
 }
 
@@ -199,14 +202,18 @@ export async function recordWorldTry(worldId, userId) {
 }
 
 export async function getUserAura(userId) {
-  const { data, error } = await supabase
-    .from('profiles')
-    .select('aura')
-    .eq('id', userId)
-    .single()
+  try {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('aura')
+      .eq('id', userId)
+      .single()
 
-  if (error) throw error
-  return data?.aura || 0
+    if (error) return 0
+    return data?.aura || 0
+  } catch {
+    return 0
+  }
 }
 
 export async function addMessages(messages) {
