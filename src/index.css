@@ -60,7 +60,7 @@ body {
 }
 
 .worlds-marquee {
-  animation: marquee-left 30s linear infinite;
+  animation: marquee-left 60s linear infinite;
 }
 
 .worlds-marquee:hover {
