@@ -1,5 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
 
+const ALLOWED_MODELS = ['claude-haiku-4-5-20251001']
+
 export default async function handler(req, res) {
   // CORS headers
   res.setHeader('Access-Control-Allow-Origin', '*')
@@ -40,8 +42,10 @@ export default async function handler(req, res) {
 
   if (rlError) {
     console.error('Rate limit check failed:', rlError.message)
-    // Fail open — don't block users if the rate limit table isn't set up yet
-  } else if (!allowed) {
+    return res.status(503).json({ error: 'Service temporarily unavailable' })
+  }
+
+  if (!allowed) {
     return res.status(429).json({
       error: 'Rate limit exceeded. Limits: 30/min, 300/hour, 600/day.'
     })
@@ -50,9 +54,16 @@ export default async function handler(req, res) {
   // Validate request body
   const { model, system, messages, max_tokens } = req.body
 
-  if (!system || !messages || !Array.isArray(messages)) {
-    return res.status(400).json({ error: 'Invalid request body' })
+  if (!system || typeof system !== 'string' || system.length > 8000) {
+    return res.status(400).json({ error: 'Invalid or oversized system prompt' })
   }
+
+  if (!messages || !Array.isArray(messages) || messages.length > 50) {
+    return res.status(400).json({ error: 'Invalid or too many messages' })
+  }
+
+  // Enforce model allowlist — ignore client-supplied model
+  const resolvedModel = ALLOWED_MODELS.includes(model) ? model : ALLOWED_MODELS[0]
 
   // Proxy to Anthropic
   try {
@@ -64,8 +75,8 @@ export default async function handler(req, res) {
         'anthropic-version': '2023-06-01',
       },
       body: JSON.stringify({
-        model: model || 'claude-haiku-4-5-20251001',
-        max_tokens: Math.min(max_tokens || 500, 1000), // Cap at 1000 tokens
+        model: resolvedModel,
+        max_tokens: Math.min(max_tokens || 500, 1000),
         system,
         messages,
       }),

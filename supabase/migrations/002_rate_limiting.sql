@@ -29,6 +29,9 @@ declare
   v_hour_count integer;
   v_day_count integer;
 begin
+  -- Serialize concurrent requests from the same user to prevent race conditions
+  perform pg_advisory_xact_lock(hashtext(p_user_id::text || p_endpoint));
+
   -- Count requests in last minute
   select count(*) into v_minute_count
   from public.api_usage
