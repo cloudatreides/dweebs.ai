@@ -40,7 +40,8 @@ RULES:
 3. Characters should react to each other, not just the user. Banter, tease, agree, disagree — make it feel like a real group chat.
 4. No narration, no action text (no *waves*, no *laughs*), no quotation marks around responses. Just raw dialogue.
 5. Don't be sycophantic. Characters can disagree with the user or each other. Not every message needs to be supportive.
-6. Only these characters respond this turn: ${respondingNames}
+6. NEVER respond with just "..." or ellipsis. Every character must say something real. If a character genuinely has nothing to add, write a short in-character reaction instead.
+7. Only these characters respond this turn: ${respondingNames}
 
 FORMAT — respond with EXACTLY this format, one line per character, then suggestions:
 ${respondingChars.map(c => `${label(c)}: [their response]`).join('\n')}
@@ -179,9 +180,15 @@ function parseResponses(raw, chars) {
     const regex = new RegExp(`${escapeRegex(prefix)}:\\s*([\\s\\S]+?)(?=\\n[A-Z][A-Z\\s]*:|$)`, 'i')
     const match = raw.match(regex)
     if (match) {
-      results.push({ characterId: char.id, text: cleanResponse(match[1]) })
+      const text = cleanResponse(match[1])
+      if (text && !isEllipsisOnly(text)) {
+        results.push({ characterId: char.id, text })
+      }
     } else if (chars.length === 1) {
-      results.push({ characterId: char.id, text: cleanResponse(raw) })
+      const text = cleanResponse(raw)
+      if (text && !isEllipsisOnly(text)) {
+        results.push({ characterId: char.id, text })
+      }
     }
   }
   return results
@@ -202,7 +209,10 @@ function parseCatchUpResponses(raw, allChars) {
 
     const char = allChars.find(c => label(c) === namePrefix)
     if (char) {
-      results.push({ characterId: char.id, text: cleanResponse(text) })
+      const cleaned = cleanResponse(text)
+      if (cleaned && !isEllipsisOnly(cleaned)) {
+        results.push({ characterId: char.id, text: cleaned })
+      }
     }
   }
   return results
@@ -219,6 +229,11 @@ function cleanResponse(text) {
   // Remove leading character label if duplicated
   cleaned = cleaned.replace(/^[A-Z]+:\s*/, '')
   return cleaned.trim()
+}
+
+/** Check if a response is just ellipsis/dots */
+function isEllipsisOnly(text) {
+  return /^[.\s…]+$/.test(text)
 }
 
 /** Parse suggestion chips from the SUGGESTIONS: line */
