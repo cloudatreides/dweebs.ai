@@ -363,6 +363,11 @@ export default function ChatView() {
       }))
       const savedResponses = await addMessages(dbMessages)
 
+      // Clear typing if no responses came back (e.g. filtered out)
+      if (responses.length === 0) {
+        setTypingChar(null)
+      }
+
       // Reveal each response with animation
       for (let i = 0; i < responses.length; i++) {
         const { characterId, text: responseText } = responses[i]
