@@ -174,7 +174,7 @@ export default function DesktopSidebar() {
 
               {/* Rewards */}
               <div>
-                <p className="text-[10px] font-semibold tracking-widest uppercase mb-2" style={{ color: '#6B7280' }}>Redeem</p>
+                <p className="text-[10px] font-semibold tracking-widest uppercase mb-2" style={{ color: '#6B7280' }}>Redeem <span style={{ color: '#4B5563' }}>[Coming Soon]</span></p>
                 <div className="flex flex-col gap-1.5">
                   {[
                     { label: '1 Day Pro', cost: 500 },
