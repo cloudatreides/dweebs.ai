@@ -72,6 +72,7 @@ export default function Login() {
       <div className="w-full max-w-sm">
         {/* Logo */}
         <div className="text-center mb-8">
+          <img src="/logo.png" alt="dweebs.lol" className="w-36 h-36 mx-auto -mb-10 object-contain" />
           <h1 className="text-2xl font-bold text-white mb-1">dweebs<span style={{ color: '#7C3AED' }}>.lol</span></h1>
           <p className="text-sm" style={{ color: '#6B7280' }}>
             {isSignUp ? 'Create your account' : 'Welcome back'}
