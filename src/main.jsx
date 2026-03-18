@@ -4,13 +4,16 @@ import './index.css'
 import App from './App.jsx'
 import { AuthProvider } from './context/AuthContext'
 import { CharacterProvider } from './context/CharacterContext'
+import { TierProvider } from './context/TierContext'
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <AuthProvider>
-      <CharacterProvider>
-        <App />
-      </CharacterProvider>
+      <TierProvider>
+        <CharacterProvider>
+          <App />
+        </CharacterProvider>
+      </TierProvider>
     </AuthProvider>
   </StrictMode>,
 )
