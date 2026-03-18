@@ -36,7 +36,7 @@ export default function DesktopSidebar() {
       {/* Logo */}
       <div className="px-6 pt-8 pb-5 cursor-pointer" onClick={() => navigate('/home')}>
         <span className="text-xl font-bold text-white tracking-tight">
-          dweebs<span style={{ color: '#7C3AED' }}>.ai</span>
+          dweebs<span style={{ color: '#7C3AED' }}>.lol</span>
         </span>
         <p className="text-xs mt-1" style={{ color: '#4B5563' }}>Your characters are waiting</p>
       </div>

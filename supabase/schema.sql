@@ -1,4 +1,4 @@
--- Dweebs.ai Database Schema
+-- dweebs.lol Database Schema
 -- Run this in Supabase SQL Editor after creating the project
 
 -- ============================================
