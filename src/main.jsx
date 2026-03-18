@@ -5,6 +5,7 @@ import App from './App.jsx'
 import { AuthProvider } from './context/AuthContext'
 import { CharacterProvider } from './context/CharacterContext'
 import { TierProvider } from './context/TierContext'
+import { Analytics } from '@vercel/analytics/react'
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
@@ -12,6 +13,7 @@ createRoot(document.getElementById('root')).render(
       <TierProvider>
         <CharacterProvider>
           <App />
+          <Analytics />
         </CharacterProvider>
       </TierProvider>
     </AuthProvider>

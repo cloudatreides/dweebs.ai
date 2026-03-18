@@ -1,10 +1,20 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { Bell, Plus, Sparkles, LogOut } from 'lucide-react'
+import { Plus, Sparkles, LogOut, Archive, ArchiveRestore, ChevronDown } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useCharacters } from '../context/CharacterContext'
 import { getUserChats } from '../lib/db'
 import BottomNav from '../components/BottomNav'
+
+function getArchivedIds(userId) {
+  try {
+    return JSON.parse(localStorage.getItem(`archived_chats_${userId}`) || '[]')
+  } catch { return [] }
+}
+
+function setArchivedIds(userId, ids) {
+  localStorage.setItem(`archived_chats_${userId}`, JSON.stringify(ids))
+}
 
 export default function MyWorlds() {
   const navigate = useNavigate()
@@ -15,9 +25,12 @@ export default function MyWorlds() {
 
   const [chats, setChats] = useState([])
   const [loading, setLoading] = useState(true)
+  const [archivedIds, setArchivedIdsState] = useState([])
+  const [showArchived, setShowArchived] = useState(false)
 
   useEffect(() => {
     if (!user) return
+    setArchivedIdsState(getArchivedIds(user.id))
     getUserChats(user.id)
       .then(data => setChats(data))
       .catch(err => console.error('Failed to load chats:', err))
@@ -29,6 +42,20 @@ export default function MyWorlds() {
   const handleSignOut = async () => {
     await signOut()
     navigate('/')
+  }
+
+  const handleArchive = (e, chatId) => {
+    e.stopPropagation()
+    const updated = [...archivedIds, chatId]
+    setArchivedIdsState(updated)
+    setArchivedIds(user.id, updated)
+  }
+
+  const handleUnarchive = (e, chatId) => {
+    e.stopPropagation()
+    const updated = archivedIds.filter(id => id !== chatId)
+    setArchivedIdsState(updated)
+    setArchivedIds(user.id, updated)
   }
 
   const formatTime = (dateStr) => {
@@ -43,6 +70,66 @@ export default function MyWorlds() {
     const diffDays = Math.floor(diffHours / 24)
     if (diffDays === 1) return 'Yesterday'
     return `${diffDays}d ago`
+  }
+
+  const activeChats = chats.filter(c => !archivedIds.includes(c.id))
+  const archivedChats = chats.filter(c => archivedIds.includes(c.id))
+
+  const renderChat = (chat, archived = false) => {
+    const chars = getChars(chat.character_ids)
+    return (
+      <div key={chat.id} className="flex items-center gap-2">
+        <button
+          onClick={() => navigate(`/chat/${chat.id}`)}
+          className="flex items-center gap-3 p-4 rounded-2xl text-left flex-1 min-w-0 transition-opacity"
+          style={{
+            background: '#1A1A1F',
+            border: '1px solid rgba(255,255,255,0.04)',
+            opacity: archived ? 0.6 : 1,
+          }}
+        >
+          {/* Avatar cluster */}
+          <div className="relative flex-shrink-0 w-12 h-10">
+            {chars[0] && (
+              <div className="absolute left-0 top-0 w-9 h-9 rounded-full overflow-hidden flex items-center justify-center text-base z-10" style={{ background: chars[0].color + '33', border: `1.5px solid ${chars[0].color}55` }}>
+                {chars[0].avatar ? <img src={chars[0].avatar} alt={chars[0].name} className="w-full h-full object-cover" /> : chars[0].emoji}
+              </div>
+            )}
+            {chars[1] && (
+              <div className="absolute left-5 top-1 w-9 h-9 rounded-full overflow-hidden flex items-center justify-center text-base" style={{ background: chars[1].color + '33', border: `1.5px solid ${chars[1].color}55` }}>
+                {chars[1].avatar ? <img src={chars[1].avatar} alt={chars[1].name} className="w-full h-full object-cover" /> : chars[1].emoji}
+              </div>
+            )}
+          </div>
+
+          {/* Info */}
+          <div className="flex-1 min-w-0">
+            <span className="font-semibold text-sm text-white truncate block">{chat.name}</span>
+            <p className="text-xs truncate mt-0.5" style={{ color: '#6B7280' }}>
+              {chars.map(c => c.name.split(' ')[0]).join(', ')}
+            </p>
+          </div>
+
+          {/* Timestamp */}
+          <span className="text-[11px] flex-shrink-0" style={{ color: '#4B5563' }}>
+            {formatTime(chat.updated_at)}
+          </span>
+        </button>
+
+        {/* Archive / Unarchive button — always visible */}
+        <button
+          onClick={(e) => archived ? handleUnarchive(e, chat.id) : handleArchive(e, chat.id)}
+          className="flex-shrink-0 p-2.5 rounded-xl transition-all hover:opacity-80"
+          style={{ background: '#1A1A1F', border: '1px solid rgba(255,255,255,0.04)' }}
+          title={archived ? 'Unarchive' : 'Archive'}
+        >
+          {archived
+            ? <ArchiveRestore size={15} color="#6B7280" />
+            : <Archive size={15} color="#6B7280" />
+          }
+        </button>
+      </div>
+    )
   }
 
   return (
@@ -92,46 +179,35 @@ export default function MyWorlds() {
           </button>
         </div>
       ) : (
-        /* Chat List */
         <div className="flex flex-col gap-2 px-5">
-          {chats.map((chat) => {
-            const chars = getChars(chat.character_ids)
-            return (
+          {/* Active chats */}
+          {activeChats.map(chat => renderChat(chat, false))}
+
+          {/* Archived section */}
+          {archivedChats.length > 0 && (
+            <div className="mt-2">
               <button
-                key={chat.id}
-                onClick={() => navigate(`/chat/${chat.id}`)}
-                className="flex items-center gap-3 p-4 rounded-2xl text-left w-full"
-                style={{ background: '#1A1A1F', border: '1px solid rgba(255,255,255,0.04)' }}
+                onClick={() => setShowArchived(o => !o)}
+                className="flex items-center gap-2 px-1 py-2 w-full text-left"
               >
-                {/* Avatar cluster */}
-                <div className="relative flex-shrink-0 w-12 h-10">
-                  {chars[0] && (
-                    <div className="absolute left-0 top-0 w-9 h-9 rounded-full overflow-hidden flex items-center justify-center text-base z-10" style={{ background: chars[0].color + '33', border: `1.5px solid ${chars[0].color}55` }}>
-                      {chars[0].avatar ? <img src={chars[0].avatar} alt={chars[0].name} className="w-full h-full object-cover" /> : chars[0].emoji}
-                    </div>
-                  )}
-                  {chars[1] && (
-                    <div className="absolute left-5 top-1 w-9 h-9 rounded-full overflow-hidden flex items-center justify-center text-base" style={{ background: chars[1].color + '33', border: `1.5px solid ${chars[1].color}55` }}>
-                      {chars[1].avatar ? <img src={chars[1].avatar} alt={chars[1].name} className="w-full h-full object-cover" /> : chars[1].emoji}
-                    </div>
-                  )}
-                </div>
-
-                {/* Info */}
-                <div className="flex-1 min-w-0">
-                  <span className="font-semibold text-sm text-white truncate block">{chat.name}</span>
-                  <p className="text-xs truncate mt-0.5" style={{ color: '#6B7280' }}>
-                    {chars.map(c => c.name.split(' ')[0]).join(', ')}
-                  </p>
-                </div>
-
-                {/* Timestamp */}
-                <span className="text-[11px] flex-shrink-0" style={{ color: '#4B5563' }}>
-                  {formatTime(chat.updated_at)}
+                <Archive size={13} color="#4B5563" />
+                <span className="text-[11px] font-semibold tracking-widest uppercase" style={{ color: '#4B5563' }}>
+                  Archived ({archivedChats.length})
                 </span>
+                <ChevronDown
+                  size={13}
+                  color="#4B5563"
+                  className="transition-transform ml-auto"
+                  style={{ transform: showArchived ? 'rotate(180deg)' : 'rotate(0deg)' }}
+                />
               </button>
-            )
-          })}
+              {showArchived && (
+                <div className="flex flex-col gap-2 mt-1">
+                  {archivedChats.map(chat => renderChat(chat, true))}
+                </div>
+              )}
+            </div>
+          )}
         </div>
       )}
 

@@ -391,7 +391,7 @@ export default function Landing() {
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 text-center md:text-left">
           <span className="text-xs" style={{ color: '#4B5563' }}>
             © 2025 dweebs.lol · Made by{' '}
-            <span style={{ color: '#7C3AED' }}>Zentry Labs</span>
+            <span style={{ color: '#7C3AED' }}>Cloud Labs</span>
           </span>
           <div className="flex items-center justify-center gap-4">
             <a href="https://x.com/Dweebslol" target="_blank" rel="noopener noreferrer" aria-label="Follow us on X">

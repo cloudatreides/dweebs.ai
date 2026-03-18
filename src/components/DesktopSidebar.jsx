@@ -20,8 +20,9 @@ export default function DesktopSidebar() {
 
   useEffect(() => {
     if (!user) return
+    const archivedIds = JSON.parse(localStorage.getItem(`archived_chats_${user.id}`) || '[]')
     getUserChats(user.id)
-      .then(data => setChats(data))
+      .then(data => setChats(data.filter(c => !archivedIds.includes(c.id))))
       .catch(err => console.error('Sidebar: failed to load chats:', err))
     getUserAura(user.id)
       .then(val => setAura(val))

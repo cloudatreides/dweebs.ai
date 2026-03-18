@@ -75,6 +75,7 @@ export default function ChatView() {
   const [mentionSuggestions, setMentionSuggestions] = useState([])
   const [promptSuggestions, setPromptSuggestions] = useState([])
   const [keepGoingActive, setKeepGoingActive] = useState(false)
+  const [keepGoingError, setKeepGoingError] = useState('')
   const [addCharSearch, setAddCharSearch] = useState('')
   const [showShareSheet, setShowShareSheet] = useState(false)
   const [shareDesc, setShareDesc] = useState('')
@@ -409,7 +410,7 @@ export default function ChatView() {
     }
   }
 
-  const KEEP_GOING_COOLDOWN = 3 * 60 * 60 * 1000 // 3 hours
+  const KEEP_GOING_COOLDOWN = 15 * 60 * 1000 // 15 minutes
 
   const getKeepGoingCooldown = () => {
     const stored = localStorage.getItem(`keepgoing-${id}`)
@@ -421,20 +422,21 @@ export default function ChatView() {
   const keepGoingCooldownExpiry = getKeepGoingCooldown()
   const keepGoingOnCooldown = !!keepGoingCooldownExpiry
   const canKeepGoing = chatCharIds.length >= 2 && !typingChar && !keepGoingActive && !keepGoingOnCooldown
-  const showKeepGoing = chatCharIds.length >= 2 && !typingChar && !keepGoingActive
+  const showKeepGoing = chatCharIds.length >= 2
 
   const formatCooldown = () => {
     if (!keepGoingCooldownExpiry) return ''
     const remaining = keepGoingCooldownExpiry - Date.now()
     if (remaining <= 0) return ''
-    const hours = Math.floor(remaining / (1000 * 60 * 60))
-    const mins = Math.ceil((remaining % (1000 * 60 * 60)) / (1000 * 60))
-    return hours > 0 ? `${hours}h ${mins}m` : `${mins}m`
+    const mins = Math.ceil(remaining / (1000 * 60))
+    return `${mins}m`
   }
 
   const handleKeepGoing = async () => {
+    console.log('[KIG] clicked — canKeepGoing:', canKeepGoing, '| charIds:', chatCharIds.length, '| typingChar:', !!typingChar, '| active:', keepGoingActive, '| onCooldown:', keepGoingOnCooldown)
     if (!canKeepGoing) return
     setKeepGoingActive(true)
+    setKeepGoingError('')
     setPromptSuggestions([])
 
     const chars = chatCharIds.map(cid => getCharacter(cid)).filter(Boolean)
@@ -446,7 +448,10 @@ export default function ChatView() {
         recentMessages: messages,
       })
 
-      if (responses.length === 0) { setKeepGoingActive(false); return }
+      if (responses.length === 0) {
+        setKeepGoingError('Failed to generate — try again')
+        return
+      }
 
       for (let i = 0; i < responses.length; i++) {
         const { characterId, text } = responses[i]
@@ -470,10 +475,10 @@ export default function ChatView() {
         if (i < responses.length - 1) await delay(300)
       }
 
-      // Set cooldown
       localStorage.setItem(`keepgoing-${id}`, String(Date.now() + KEEP_GOING_COOLDOWN))
     } catch (err) {
-      console.warn('Keep going failed:', err.message)
+      console.error('Keep going failed:', err.message)
+      setKeepGoingError(err.message || 'Something went wrong')
     } finally {
       setKeepGoingActive(false)
     }
@@ -775,22 +780,23 @@ export default function ChatView() {
               </button>
             ))}
             {showKeepGoing && (
-              <div className="relative group">
+              <div className="flex items-center gap-2">
                 <button
-                  onClick={canKeepGoing ? handleKeepGoing : undefined}
+                  onClick={handleKeepGoing}
+                  disabled={!canKeepGoing}
                   className="text-xs px-3 py-1.5 rounded-full transition-all flex items-center gap-1.5"
                   style={canKeepGoing
                     ? { background: '#7C3AED22', color: '#A78BFA', border: '1px solid #7C3AED44', cursor: 'pointer' }
-                    : { background: '#1A1A1F', color: '#4B5563', border: '1px solid rgba(255,255,255,0.06)', cursor: 'default' }}
+                    : { background: '#1A1A1F', color: '#4B5563', border: '1px solid rgba(255,255,255,0.06)', cursor: 'not-allowed', opacity: 0.5 }}
                 >
-                  <Play size={10} fill={canKeepGoing ? '#A78BFA' : '#4B5563'} />
-                  Keep It Going
+                  {keepGoingActive
+                    ? <span className="w-2.5 h-2.5 rounded-full border border-current border-t-transparent animate-spin" />
+                    : <Play size={10} fill={canKeepGoing ? '#A78BFA' : '#4B5563'} />
+                  }
+                  {keepGoingActive ? 'Generating...' : keepGoingOnCooldown ? `Wait ${formatCooldown()}` : 'Keep It Going'}
                 </button>
-                {keepGoingOnCooldown && (
-                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2.5 py-1.5 rounded-lg text-[11px] whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"
-                    style={{ background: '#1E1E26', color: '#9CA3AF', border: '1px solid rgba(255,255,255,0.1)', boxShadow: '0 4px 12px rgba(0,0,0,0.4)' }}>
-                    Available in {formatCooldown()}
-                  </div>
+                {keepGoingError && (
+                  <span className="text-xs" style={{ color: '#EF4444' }}>{keepGoingError}</span>
                 )}
               </div>
             )}
