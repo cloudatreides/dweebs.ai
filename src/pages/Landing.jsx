@@ -221,11 +221,9 @@ export default function Landing() {
 
           {/* Left — copy + CTAs */}
           <div className="flex flex-col gap-5 md:flex-1">
-            <motion.div variants={fadeUp} className="flex md:justify-start justify-center">
-              <span className="text-xs font-semibold tracking-widest uppercase px-3 py-1 rounded-full"
-                style={{ border: '1px solid #7C3AED', color: '#A78BFA' }}>
-                ✦ Always On
-              </span>
+            <motion.div variants={fadeUp} className="flex items-center gap-3 md:justify-start justify-center">
+              <img src="/logo.png" alt="dweebs.lol" className="w-24 h-24 -mr-4 object-contain" />
+              <span className="text-lg font-bold text-white">dweebs<span style={{ color: '#7C3AED' }}>.lol</span></span>
             </motion.div>
 
             <motion.h1 variants={fadeUp} className="text-[30px] md:text-[48px] font-bold leading-tight text-white md:text-left text-center">
