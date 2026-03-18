@@ -1,4 +1,4 @@
-const API_KEY = import.meta.env.VITE_ANTHROPIC_API_KEY
+import { supabase } from './supabase'
 
 const PRIMARY_MODEL = 'claude-haiku-4-5-20251001'
 
@@ -18,9 +18,6 @@ function describeCharacter(c) {
  * Returns an array of { characterId, text } objects — one per responding character.
  */
 export async function getCharacterResponses({ characters, scene, messages, mentionedId }) {
-  if (!API_KEY) {
-    throw new Error('VITE_ANTHROPIC_API_KEY is not set')
-  }
 
   const respondingChars = mentionedId
     ? characters.filter(c => c.id === mentionedId)
@@ -77,9 +74,6 @@ SUGGESTIONS: [3 short conversation prompts the user could say next, separated by
  * Called when user opens a chat after 2+ hours of inactivity.
  */
 export async function generateCatchUpMessages({ characters, scene, recentMessages, hoursAway }) {
-  if (!API_KEY) {
-    throw new Error('VITE_ANTHROPIC_API_KEY is not set')
-  }
 
   if (characters.length < 2) return []
 
@@ -148,13 +142,17 @@ async function callWithFallback(systemPrompt, userContent) {
 }
 
 async function callClaude(model, systemPrompt, userContent) {
-  const response = await fetch('https://api.anthropic.com/v1/messages', {
+  const { data: { session } } = await supabase.auth.getSession()
+  const token = session?.access_token
+  if (!token) {
+    throw new Error('Not authenticated — please sign in')
+  }
+
+  const response = await fetch('/api/chat', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'x-api-key': API_KEY,
-      'anthropic-version': '2023-06-01',
-      'anthropic-dangerous-direct-browser-access': 'true',
+      'Authorization': `Bearer ${token}`,
     },
     body: JSON.stringify({
       model,
@@ -165,8 +163,8 @@ async function callClaude(model, systemPrompt, userContent) {
   })
 
   if (!response.ok) {
-    const err = await response.text()
-    throw new Error(`${model} error ${response.status}: ${err}`)
+    const err = await response.json().catch(() => ({}))
+    throw new Error(err.error || `API error ${response.status}`)
   }
 
   const data = await response.json()
@@ -249,7 +247,6 @@ function label(char) {
  * Generates ~5 back-and-forth messages. User is a spectator.
  */
 export async function generateKeepGoing({ characters, scene, recentMessages }) {
-  if (!API_KEY) throw new Error('VITE_ANTHROPIC_API_KEY is not set')
   if (characters.length < 2) return []
 
   const charDescriptions = characters.map(describeCharacter).join('\n\n')
@@ -305,7 +302,6 @@ ${characters.map(c => `${label(c)}: [message]`).join(' or ')}`
  * Returns [{ characterId, text }] — 1-2 messages max.
  */
 export async function generateNudgeMessage({ characters, scene, recentMessages }) {
-  if (!API_KEY) throw new Error('VITE_ANTHROPIC_API_KEY is not set')
   if (characters.length === 0) return []
 
   // Pick 1-2 characters to nudge
@@ -393,7 +389,6 @@ export async function fetchCharacterImage(name) {
  * Returns { name, fandom, bio, personality, tags, quote, emoji, color }.
  */
 export async function generateCharacterProfile(name) {
-  if (!API_KEY) throw new Error('VITE_ANTHROPIC_API_KEY is not set')
 
   const systemPrompt = `You generate character profiles for a group chat app where users roleplay with fictional and real-world characters.
 
