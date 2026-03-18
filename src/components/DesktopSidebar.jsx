@@ -34,11 +34,14 @@ export default function DesktopSidebar() {
       borderRight: '1px solid rgba(255,255,255,0.06)',
     }}>
       {/* Logo */}
-      <div className="px-6 pt-8 pb-5 cursor-pointer" onClick={() => navigate('/home')}>
-        <span className="text-xl font-bold text-white tracking-tight">
-          dweebs<span style={{ color: '#7C3AED' }}>.lol</span>
-        </span>
-        <p className="text-xs mt-1" style={{ color: '#4B5563' }}>Your characters are waiting</p>
+      <div className="px-6 pt-6 pb-3 cursor-pointer flex items-center gap-2" onClick={() => navigate('/home')}>
+        <img src="/logo.png" alt="dweebs.lol" className="w-14 h-14 -ml-2 object-contain" />
+        <div>
+          <span className="text-xl font-bold text-white tracking-tight">
+            dweebs<span style={{ color: '#7C3AED' }}>.lol</span>
+          </span>
+          <p className="text-xs mt-0.5" style={{ color: '#4B5563' }}>Your characters are waiting</p>
+        </div>
       </div>
 
       {/* New Chat CTA */}
