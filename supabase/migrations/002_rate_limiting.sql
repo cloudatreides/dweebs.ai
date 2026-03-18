@@ -21,7 +21,7 @@ create policy "No direct access to api_usage"
 -- RATE LIMIT CHECK (atomic check + record)
 -- ============================================
 -- Returns true if request is allowed, false if rate limited.
--- Limits: 10/min, 100/hour, 500/day
+-- Limits: 30/min, 300/hour, 600/day
 create or replace function public.check_rate_limit(p_user_id uuid, p_endpoint text)
 returns boolean as $$
 declare
@@ -36,7 +36,7 @@ begin
     and endpoint = p_endpoint
     and created_at > now() - interval '1 minute';
 
-  if v_minute_count >= 10 then return false; end if;
+  if v_minute_count >= 30 then return false; end if;
 
   -- Count requests in last hour
   select count(*) into v_hour_count
@@ -45,7 +45,7 @@ begin
     and endpoint = p_endpoint
     and created_at > now() - interval '1 hour';
 
-  if v_hour_count >= 100 then return false; end if;
+  if v_hour_count >= 300 then return false; end if;
 
   -- Count requests in last day
   select count(*) into v_day_count
@@ -54,7 +54,7 @@ begin
     and endpoint = p_endpoint
     and created_at > now() - interval '1 day';
 
-  if v_day_count >= 500 then return false; end if;
+  if v_day_count >= 600 then return false; end if;
 
   -- Record the request
   insert into public.api_usage (user_id, endpoint)

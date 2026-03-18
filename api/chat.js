@@ -43,7 +43,7 @@ export default async function handler(req, res) {
     // Fail open — don't block users if the rate limit table isn't set up yet
   } else if (!allowed) {
     return res.status(429).json({
-      error: 'Rate limit exceeded. Limits: 10/min, 100/hour, 500/day.'
+      error: 'Rate limit exceeded. Limits: 30/min, 300/hour, 600/day.'
     })
   }
 
