@@ -24,7 +24,7 @@ export function AuthProvider({ children }) {
     }, 5000)
 
     async function initAuth() {
-      // Step 1: If URL has OAuth tokens in hash, manually set the session
+      // Step 1: If URL has OAuth tokens in hash (implicit flow), manually set the session
       const hash = window.location.hash
       if (hash.includes('access_token')) {
         const params = new URLSearchParams(hash.substring(1))
@@ -42,7 +42,6 @@ export function AuthProvider({ children }) {
           } else if (data.session?.user) {
             setUser(data.session.user)
             await fetchProfile(data.session.user.id)
-            // Clean up the URL hash and redirect to /home
             window.location.replace('/home')
             return
           }
@@ -55,15 +54,22 @@ export function AuthProvider({ children }) {
         setUser(session.user)
         await fetchProfile(session.user.id)
       } else {
-        finishLoading()
+        // If there's a PKCE code in the URL, don't finish loading yet —
+        // wait for onAuthStateChange to fire after Supabase exchanges the code
+        const hasPkceCode = new URLSearchParams(window.location.search).has('code')
+        if (!hasPkceCode) finishLoading()
       }
     }
 
     // Listen for future auth changes (sign out, token refresh, etc.)
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       setUser(session?.user ?? null)
       if (session?.user) {
         fetchProfile(session.user.id)
+        // Redirect to /home after OAuth PKCE code exchange
+        if (event === 'SIGNED_IN' && new URLSearchParams(window.location.search).has('code')) {
+          window.location.replace('/home')
+        }
       } else {
         setProfile(null)
         finishLoading()
