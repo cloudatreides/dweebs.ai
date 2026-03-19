@@ -11,7 +11,7 @@ import BottomNav from '../components/BottomNav'
 import BottomSheet from '../components/BottomSheet'
 import CharacterAvatar from '../components/CharacterAvatar'
 
-const FILTERS = ['All', 'K-pop', 'Anime', 'Music', 'TV', 'Custom']
+const FILTERS = ['All', 'K-pop', 'Anime', 'Music', 'TV', 'Novels', 'Custom']
 
 function formatCount(n) {
   if (!n) return null
