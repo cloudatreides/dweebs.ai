@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { Plus, Sparkles, LogOut, Archive, ArchiveRestore, ChevronDown } from 'lucide-react'
+import { Plus, Sparkles, LogOut, Archive, ArchiveRestore, ChevronDown, MoreVertical } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useCharacters } from '../context/CharacterContext'
 import { getUserChats } from '../lib/db'
@@ -27,6 +27,15 @@ export default function MyWorlds() {
   const [loading, setLoading] = useState(true)
   const [archivedIds, setArchivedIdsState] = useState([])
   const [showArchived, setShowArchived] = useState(false)
+  const [menuOpenId, setMenuOpenId] = useState(null)
+  const menuRef = useRef(null)
+
+  // Close menu on outside click
+  useEffect(() => {
+    const handler = (e) => { if (menuRef.current && !menuRef.current.contains(e.target)) setMenuOpenId(null) }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [])
 
   useEffect(() => {
     if (!user) return
@@ -77,8 +86,9 @@ export default function MyWorlds() {
 
   const renderChat = (chat, archived = false) => {
     const chars = getChars(chat.character_ids)
+    const isMenuOpen = menuOpenId === chat.id
     return (
-      <div key={chat.id} className="flex items-center gap-2">
+      <div key={chat.id} className="relative flex items-center gap-2">
         <button
           onClick={() => navigate(`/chat/${chat.id}`)}
           className="flex items-center gap-3 p-4 rounded-2xl text-left flex-1 min-w-0 transition-opacity"
@@ -116,24 +126,37 @@ export default function MyWorlds() {
           </span>
         </button>
 
-        {/* Archive / Unarchive button — always visible */}
-        <button
-          onClick={(e) => archived ? handleUnarchive(e, chat.id) : handleArchive(e, chat.id)}
-          className="flex-shrink-0 p-2.5 rounded-xl transition-all hover:opacity-80"
-          style={{ background: '#1A1A1F', border: '1px solid rgba(255,255,255,0.04)' }}
-          title={archived ? 'Unarchive' : 'Archive'}
-        >
-          {archived
-            ? <ArchiveRestore size={15} color="#6B7280" />
-            : <Archive size={15} color="#6B7280" />
-          }
-        </button>
+        {/* 3-dot menu */}
+        <div className="relative flex-shrink-0" ref={isMenuOpen ? menuRef : null}>
+          <button
+            onClick={(e) => { e.stopPropagation(); setMenuOpenId(isMenuOpen ? null : chat.id) }}
+            className="p-2.5 rounded-xl transition-all"
+            style={{ background: isMenuOpen ? '#242429' : '#1A1A1F', border: '1px solid rgba(255,255,255,0.04)' }}
+          >
+            <MoreVertical size={15} color="#6B7280" />
+          </button>
+          {isMenuOpen && (
+            <div
+              className="absolute right-0 top-full mt-1 rounded-xl overflow-hidden z-30 min-w-[140px]"
+              style={{ background: '#1E1E26', border: '1px solid rgba(255,255,255,0.08)', boxShadow: '0 8px 24px rgba(0,0,0,0.4)' }}
+            >
+              <button
+                onClick={(e) => { archived ? handleUnarchive(e, chat.id) : handleArchive(e, chat.id); setMenuOpenId(null) }}
+                className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-left transition-colors hover:bg-white/5"
+                style={{ color: '#9CA3AF' }}
+              >
+                {archived ? <ArchiveRestore size={14} /> : <Archive size={14} />}
+                {archived ? 'Unarchive' : 'Archive'}
+              </button>
+            </div>
+          )}
+        </div>
       </div>
     )
   }
 
   return (
-    <div className="flex flex-col min-h-dvh md:h-dvh md:overflow-y-auto pb-24 md:pb-8" style={{ background: '#0D0D0F' }}>
+    <div className="flex flex-col h-dvh overflow-y-auto pb-24 md:pb-8" style={{ background: '#0D0D0F' }}>
       {/* Header */}
       <div className="flex items-center justify-between px-5 pt-12 md:pt-8 pb-4">
         <div>
