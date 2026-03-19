@@ -411,6 +411,7 @@ export default function ChatView() {
   }
 
   const KEEP_GOING_COOLDOWN = 15 * 60 * 1000 // 15 minutes
+  const KEEP_GOING_FREE_USES = 2
 
   const getKeepGoingCooldown = () => {
     const stored = localStorage.getItem(`keepgoing-${id}`)
@@ -419,8 +420,15 @@ export default function ChatView() {
     return Date.now() < expiry ? expiry : null
   }
 
+  const getKeepGoingUsesLeft = () => {
+    if (getKeepGoingCooldown()) return 0
+    const stored = localStorage.getItem(`keepgoing-count-${id}`)
+    return stored !== null ? parseInt(stored, 10) : KEEP_GOING_FREE_USES
+  }
+
   const keepGoingCooldownExpiry = getKeepGoingCooldown()
   const keepGoingOnCooldown = !!keepGoingCooldownExpiry
+  const keepGoingUsesLeft = getKeepGoingUsesLeft()
   const canKeepGoing = chatCharIds.length >= 2 && !typingChar && !keepGoingActive && !keepGoingOnCooldown
   const showKeepGoing = chatCharIds.length >= 2
 
@@ -475,7 +483,14 @@ export default function ChatView() {
         if (i < responses.length - 1) await delay(300)
       }
 
-      localStorage.setItem(`keepgoing-${id}`, String(Date.now() + KEEP_GOING_COOLDOWN))
+      const usesLeft = getKeepGoingUsesLeft()
+      if (usesLeft <= 1) {
+        // Exhausted free uses — start 15 min cooldown and reset counter
+        localStorage.setItem(`keepgoing-${id}`, String(Date.now() + KEEP_GOING_COOLDOWN))
+        localStorage.removeItem(`keepgoing-count-${id}`)
+      } else {
+        localStorage.setItem(`keepgoing-count-${id}`, String(usesLeft - 1))
+      }
     } catch (err) {
       console.error('Keep going failed:', err.message)
       setKeepGoingError(err.message || 'Something went wrong')
@@ -794,6 +809,9 @@ export default function ChatView() {
                     : <Play size={10} fill={canKeepGoing ? '#A78BFA' : '#4B5563'} />
                   }
                   {keepGoingActive ? 'Generating...' : keepGoingOnCooldown ? `Wait ${formatCooldown()}` : 'Keep It Going'}
+                  {!keepGoingActive && !keepGoingOnCooldown && keepGoingUsesLeft < KEEP_GOING_FREE_USES && (
+                    <span className="text-[9px] opacity-60">{keepGoingUsesLeft} left</span>
+                  )}
                 </button>
                 {keepGoingError && (
                   <span className="text-xs" style={{ color: '#EF4444' }}>{keepGoingError}</span>
