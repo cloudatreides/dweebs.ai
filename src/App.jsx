@@ -5,6 +5,7 @@ import MyWorlds from './pages/MyWorlds'
 import Discover from './pages/Discover'
 import NewChat from './pages/NewChat'
 import ChatView from './pages/ChatView'
+import Profile from './pages/Profile'
 import AppLayout from './layouts/AppLayout'
 import ProtectedRoute from './components/ProtectedRoute'
 
@@ -21,7 +22,7 @@ export default function App() {
         <Route path="/my-worlds" element={<ProtectedRoute><AppLayout><MyWorlds /></AppLayout></ProtectedRoute>} />
         <Route path="/new-chat" element={<ProtectedRoute><AppLayout><NewChat /></AppLayout></ProtectedRoute>} />
         <Route path="/chat/:id" element={<ProtectedRoute><AppLayout><ChatView /></AppLayout></ProtectedRoute>} />
-        <Route path="/profile" element={<ProtectedRoute><AppLayout><MyWorlds /></AppLayout></ProtectedRoute>} />
+        <Route path="/profile" element={<ProtectedRoute><AppLayout><Profile /></AppLayout></ProtectedRoute>} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>

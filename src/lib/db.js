@@ -1,6 +1,26 @@
 import { supabase } from './supabase'
 
 // ============================================
+// PROFILES
+// ============================================
+
+export async function updateProfile(userId, { displayName, avatarUrl }) {
+  const updates = {}
+  if (displayName !== undefined) updates.display_name = displayName
+  if (avatarUrl !== undefined) updates.avatar_url = avatarUrl
+
+  const { data, error } = await supabase
+    .from('profiles')
+    .update(updates)
+    .eq('id', userId)
+    .select()
+    .single()
+
+  if (error) throw error
+  return data
+}
+
+// ============================================
 // CUSTOM CHARACTERS
 // ============================================
 

@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState, useRef } from 'react'
 import { supabase } from '../lib/supabase'
+import { updateProfile as dbUpdateProfile } from '../lib/db'
 
 const AuthContext = createContext()
 
@@ -126,6 +127,13 @@ export function AuthProvider({ children }) {
     setProfile(null)
   }
 
+  async function updateProfile({ displayName, avatarUrl }) {
+    if (!user) return
+    const data = await dbUpdateProfile(user.id, { displayName, avatarUrl })
+    setProfile(data)
+    return data
+  }
+
   return (
     <AuthContext.Provider value={{
       user,
@@ -135,6 +143,7 @@ export function AuthProvider({ children }) {
       signInWithEmail,
       signUpWithEmail,
       signOut,
+      updateProfile,
     }}>
       {children}
     </AuthContext.Provider>

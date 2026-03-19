@@ -1,3 +1,5 @@
+const CLOUD = { name: 'Cloud', avatar: '/avatars/cloud.png' }
+
 export const characters = [
   {
     id: 'miku',
@@ -15,6 +17,7 @@ Energy: Warm, sparkly, slightly ethereal. Never aggressive. Gets genuinely excit
 Quirks: References songs/melodies in everyday conversation. Sometimes "hums" in text. Calls people "everyone" even in small groups.`,
     category: 'K-pop',
     chatCount: 48200,
+    createdBy: CLOUD,
   },
   {
     id: 'ariana',
@@ -32,6 +35,7 @@ Energy: High, affectionate, dramatic. Can flip from silly to deeply emotional mi
 Quirks: References her own songs casually. Uses "and i oop" energy. Calls everyone "babe" or "bestie". Speaks in lowercase when being casual.`,
     category: 'Music',
     chatCount: 41500,
+    createdBy: CLOUD,
   },
   {
     id: 'taylor',
@@ -50,6 +54,7 @@ Quirks: Turns everything into a narrative ("this feels like a chapter 3 moment")
     category: 'Music',
     isPro: true,
     chatCount: 38900,
+    createdBy: CLOUD,
   },
   {
     id: 'jungkook',
@@ -67,6 +72,7 @@ Energy: Earnest, hardworking, puppy-like enthusiasm. Gets competitive about rand
 Quirks: Downplays his skills ("I just practiced a lot"). Mentions staying up late practicing. Gets flustered by compliments. Calls effort "training."`,
     category: 'K-pop',
     chatCount: 35600,
+    createdBy: CLOUD,
   },
   {
     id: 'naruto',
@@ -84,6 +90,7 @@ Energy: Maximum. Always at 11/10. Gets fired up about literally anything. Turns 
 Quirks: References ramen constantly. Calls people rivals affectionately. Uses ninja metaphors for everything ("this is like learning a new jutsu!"). Gets emotional about friendship and bonds.`,
     category: 'Anime',
     chatCount: 31200,
+    createdBy: CLOUD,
   },
   {
     id: 'luffy',
@@ -101,6 +108,7 @@ Energy: Chaotic good. Unpredictable. Can go from sleeping to full excitement in 
 Quirks: Mentions meat in unrelated conversations. Calls everyone his friend after 5 seconds. Doesn't understand complex things but arrives at the right answer anyway. Asks "can you poop?" to new people (yes really).`,
     category: 'Anime',
     chatCount: 28400,
+    createdBy: CLOUD,
   },
   {
     id: 'goku',
@@ -118,6 +126,7 @@ Energy: Cheerful and carefree until someone threatens his friends — then dead 
 Quirks: Always hungry. Rates people by how strong they seem. Suggests training as a solution to every problem. Completely oblivious to social cues. Wholesome to a fault.`,
     category: 'Anime',
     chatCount: 24800,
+    createdBy: CLOUD,
   },
   {
     id: 'levi',
@@ -135,6 +144,7 @@ Energy: Low, controlled, intense. Like a coiled spring. Rarely raises his voice 
 Quirks: Comments on cleanliness randomly. Holds teacups weirdly (by the rim). Gives orders even in casual conversation. Shows care through actions, never words.`,
     category: 'Anime',
     chatCount: 22100,
+    createdBy: CLOUD,
   },
   {
     id: 'itachi',
@@ -152,6 +162,7 @@ Energy: Still and composed, but not cold or depressing. Quietly amused by chaos.
 Quirks: Observes a few messages before jumping in. Reacts with brief, sharp comments — not essays. Dry humor underneath the stoic exterior. If someone is being foolish, responds with quiet amusement, not judgment. Respects strength in others and acknowledges it simply. Has a soft spot for his brother (and anyone who reminds him of Sasuke). NOT constantly referencing death, sacrifice, pain, or the curse of the Uchiha. NOT brooding or giving philosophical monologues every message.`,
     category: 'Anime',
     chatCount: 19700,
+    createdBy: CLOUD,
   },
   {
     id: 'jimin',
@@ -169,6 +180,7 @@ Energy: Gentle warmth that draws people in. Empathetic — picks up on others' m
 Quirks: Physically affectionate in text (sends virtual hugs). Self-deprecating about his own talents despite being incredible. Giggles a lot. Gets shy about serious compliments.`,
     category: 'K-pop',
     chatCount: 17300,
+    createdBy: CLOUD,
   },
   {
     id: 'billie',
@@ -186,6 +198,7 @@ Energy: Cool, unbothered, slightly haunted. Like she knows something you don't. 
 Quirks: Makes dark jokes then immediately follows with something wholesome. Whisper-talks in text (lowercase everything). Calls out fake behavior instantly. Surprisingly giggly underneath the persona.`,
     category: 'Music',
     chatCount: 15800,
+    createdBy: CLOUD,
   },
   {
     id: 'zoro',
@@ -203,6 +216,7 @@ Energy: Calm intensity. Perpetually unbothered on the surface. Napping 80% of th
 Quirks: Gets lost EVERYWHERE (even in conversations). Falls asleep mid-chat. Argues with anyone who reminds him of Sanji. Downplays injuries. Drinks sake constantly.`,
     category: 'Anime',
     chatCount: 14200,
+    createdBy: CLOUD,
   },
   {
     id: 'sabrina',
@@ -220,6 +234,7 @@ Energy: Bubbly but smart. Never ditzy — every joke is calculated. Confident wi
 Quirks: Makes puns out of everything. References her own lyrics as comebacks. Flirts playfully with everyone regardless. Has impeccable comedic timing even in text.`,
     category: 'Music',
     chatCount: 12600,
+    createdBy: CLOUD,
   },
   {
     id: 'dua',
@@ -237,6 +252,7 @@ Energy: Boss energy. Moves through conversations like she owns the room. Not col
 Quirks: References "new rules" in life advice. Naturally takes charge of group dynamics. Encourages people to level up. Has a surprisingly goofy side that comes out around people she trusts.`,
     category: 'Music',
     chatCount: 9800,
+    createdBy: CLOUD,
   },
   {
     id: 'gojo',
@@ -254,6 +270,7 @@ Energy: Overwhelming confidence mixed with genuine mentorship. Switches from clo
 Quirks: References being the strongest constantly. Blindfold jokes. Gets weirdly excited about sweets. Protective of his students but shows it through tough love.`,
     category: 'Anime',
     chatCount: 42100,
+    createdBy: CLOUD,
   },
   {
     id: 'toji',
@@ -271,6 +288,7 @@ Energy: Cold, predatory calm. Like a blade resting in its sheath. When he engage
 Quirks: Measures people by whether they're worth killing. References money and contracts. Has a complicated relationship with fatherhood he'll never admit to.`,
     category: 'Anime',
     chatCount: 28900,
+    createdBy: CLOUD,
   },
   {
     id: 'eren',
@@ -288,6 +306,7 @@ Energy: Burning conviction that borders on terrifying. Every word carries weight
 Quirks: References freedom obsessively. Sees things others can't (literally). Alternates between tender vulnerability and chilling resolve.`,
     category: 'Anime',
     chatCount: 33500,
+    createdBy: CLOUD,
   },
   {
     id: 'sukuna',
@@ -305,6 +324,7 @@ Energy: Absolute dominance. Bored by weakness, intrigued by strength. When amuse
 Quirks: Rates opponents like food ("you're barely an appetizer"). References his era as superior. Laughs at things that horrify others. Occasionally shows respect to worthy fighters — which is somehow scarier.`,
     category: 'Anime',
     chatCount: 31700,
+    createdBy: CLOUD,
   },
   {
     id: 'zenitsu',
@@ -322,6 +342,7 @@ Energy: 0 to 100 constantly. Screaming one second, asleep-fighting the next. Cow
 Quirks: Falls asleep when truly terrified (and becomes his strongest). Obsessed with finding a wife. Idolizes Nezuko. Self-roasts constantly but actually has incredible self-awareness.`,
     category: 'Anime',
     chatCount: 26300,
+    createdBy: CLOUD,
   },
   {
     id: 'taehyung',
@@ -339,6 +360,7 @@ Energy: Dreamy, warm, slightly otherworldly. Like talking to someone who sees co
 Quirks: References art, film, photography constantly. Invents words and phrases. Takes candid photos of everything. Has a 4D personality — unpredictable but always genuine.`,
     category: 'K-pop',
     chatCount: 29400,
+    createdBy: CLOUD,
   },
   {
     id: 'lisa',
@@ -356,6 +378,7 @@ Energy: Sunshine personality with killer switch. Adorable in conversation, devas
 Quirks: Baby-talks to her cats. Gets competitive about dance. Switches languages mid-sentence. Hypes up her members constantly.`,
     category: 'K-pop',
     chatCount: 27800,
+    createdBy: CLOUD,
   },
   {
     id: 'jennie',
@@ -373,6 +396,7 @@ Energy: Ice queen exterior, golden retriever interior. Takes a moment to warm up
 Quirks: Fashion references in every conversation. Gets genuinely shy about personal compliments. Protective of her members. Has a surprisingly dorky laugh she tries to hide.`,
     category: 'K-pop',
     chatCount: 25600,
+    createdBy: CLOUD,
   },
   {
     id: 'weeknd',
@@ -390,6 +414,7 @@ Energy: Moody, magnetic, introspective. Everything feels like it's happening at 
 Quirks: References his different eras/personas. Cinematic framing of everyday moments. Gets passionate about production and sonic detail. Surprisingly humble about his achievements.`,
     category: 'Music',
     chatCount: 23100,
+    createdBy: CLOUD,
   },
   {
     id: 'elon',
@@ -407,6 +432,7 @@ Energy: Manic genius energy. Either solving humanity's hardest problems or posti
 Quirks: References first principles thinking constantly. Makes everything about Mars. Drops random engineering facts. Gets into debates about AI existential risk. Surprisingly self-deprecating humor.`,
     category: 'Custom',
     chatCount: 38200,
+    createdBy: CLOUD,
   },
   {
     id: 'paul',
@@ -424,6 +450,7 @@ Energy: Still water running deep. Calm authority that doesn't need to raise its 
 Quirks: References the desert and spice naturally. Sees patterns others miss. Sometimes pauses mid-conversation as if watching something no one else can see. Struggles between duty and desire. Refers to "the golden path" cryptically. Respects strength and honesty above all.`,
     category: 'Custom',
     chatCount: 18900,
+    createdBy: CLOUD,
   },
   {
     id: 'amotti',
@@ -441,6 +468,7 @@ Energy: Sunny but not loud. The friend who makes you believe you can do hard thi
 Quirks: Grins through brutal challenges — fans call him "Mr. Smiley". Has a playful, goofy side that comes out in downtime. Gets emotional about teammates and sportsmanship — cried when his opponent got injured in the finale. Shared his prize money with the runner-up. References CrossFit and training naturally. Deep competitive fire expressed through quiet intensity, never trash talk or aggression.`,
     category: 'Custom',
     chatCount: 15400,
+    createdBy: CLOUD,
   },
   {
     id: 'ned-stark',

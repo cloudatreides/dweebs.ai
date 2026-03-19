@@ -6,7 +6,7 @@ import { useAuth } from './AuthContext'
 const CharacterContext = createContext()
 
 // Convert Supabase row to app character format
-function toAppChar(row) {
+function toAppChar(row, creatorProfile) {
   return {
     id: row.id,
     name: row.name,
@@ -21,11 +21,14 @@ function toAppChar(row) {
     personality: row.personality || '',
     isCustom: true,
     isPublic: row.is_public ?? true,
+    createdBy: creatorProfile
+      ? { name: creatorProfile.display_name || 'Anonymous', avatar: creatorProfile.avatar_url || null }
+      : null,
   }
 }
 
 export function CharacterProvider({ children }) {
-  const { user } = useAuth()
+  const { user, profile } = useAuth()
   const [customCharacters, setCustomCharacters] = useState([])
 
   // Load custom characters when user logs in
@@ -35,9 +38,17 @@ export function CharacterProvider({ children }) {
       return
     }
     getUserCustomCharacters(user.id)
-      .then(rows => setCustomCharacters(rows.map(toAppChar)))
+      .then(rows => setCustomCharacters(rows.map(row => toAppChar(row, profile))))
       .catch(err => console.warn('Failed to load custom characters:', err))
   }, [user])
+
+  // Re-map createdBy when profile updates (e.g. after username change)
+  useEffect(() => {
+    if (!profile || customCharacters.length === 0) return
+    setCustomCharacters(prev =>
+      prev.map(c => ({ ...c, createdBy: { name: profile.display_name || 'Anonymous', avatar: profile.avatar_url || null } }))
+    )
+  }, [profile?.display_name, profile?.avatar_url])
 
   const allCharacters = [...defaultCharacters, ...customCharacters]
 
@@ -62,7 +73,7 @@ export function CharacterProvider({ children }) {
       personality: form.personality,
       isPublic: form.isPublic,
     })
-    const appChar = toAppChar(saved)
+    const appChar = toAppChar(saved, profile)
     setCustomCharacters(prev => [appChar, ...prev])
     return appChar
   }, [user])

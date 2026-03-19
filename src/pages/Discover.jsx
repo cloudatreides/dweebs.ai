@@ -53,7 +53,20 @@ function CharacterCard({ char, onClick }) {
             </span>
           )}
         </div>
-        <p className="text-xs mb-1.5" style={{ color: '#6B7280' }}>{char.fandom}</p>
+        <div className="flex items-center gap-2 mb-1.5">
+          <p className="text-xs" style={{ color: '#6B7280' }}>{char.fandom}</p>
+          {char.createdBy && (
+            <div className="flex items-center gap-1 ml-auto flex-shrink-0">
+              <div className="w-3.5 h-3.5 rounded-full overflow-hidden flex-shrink-0 flex items-center justify-center" style={{ background: '#242429' }}>
+                {char.createdBy.avatar
+                  ? <img src={char.createdBy.avatar} alt={char.createdBy.name} className="w-full h-full object-cover" />
+                  : <span className="text-[7px] font-bold" style={{ color: '#9CA3AF' }}>{char.createdBy.name?.charAt(0)}</span>
+                }
+              </div>
+              <span className="text-[10px]" style={{ color: '#4B5563' }}>{char.createdBy.name}</span>
+            </div>
+          )}
+        </div>
         <div className="flex flex-wrap gap-1 mb-1.5">
           {char.tags.map(tag => (
             <span key={tag} className="text-[10px] px-2 py-0.5 rounded-full" style={{ background: char.color + '22', color: char.color }}>
@@ -113,9 +126,22 @@ function CharDetailContent({ char, navigate, onClose, userId }) {
           </span>
         )}
       </div>
-      <span className="inline-block mt-1 mb-3 text-xs px-3 py-1 rounded-full" style={{ background: '#242429', color: '#9CA3AF' }}>
-        {char.fandom}
-      </span>
+      <div className="flex items-center justify-center gap-2 flex-wrap mt-1 mb-3">
+        <span className="text-xs px-3 py-1 rounded-full" style={{ background: '#242429', color: '#9CA3AF' }}>
+          {char.fandom}
+        </span>
+        {char.createdBy && (
+          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full" style={{ background: '#1A1A1F', border: '1px solid rgba(255,255,255,0.06)' }}>
+            <div className="w-4 h-4 rounded-full overflow-hidden flex-shrink-0 flex items-center justify-center" style={{ background: '#242429' }}>
+              {char.createdBy.avatar
+                ? <img src={char.createdBy.avatar} alt={char.createdBy.name} className="w-full h-full object-cover" />
+                : <span className="text-[8px] font-bold" style={{ color: '#9CA3AF' }}>{char.createdBy.name?.charAt(0)}</span>
+              }
+            </div>
+            <span className="text-[11px]" style={{ color: '#6B7280' }}>by <span style={{ color: '#9CA3AF' }}>{char.createdBy.name}</span></span>
+          </div>
+        )}
+      </div>
       {char.chatCount && (
         <div className="flex items-center justify-center gap-1 mb-3 text-xs" style={{ color: '#4B5563' }}>
           <MessageCircle size={12} />
