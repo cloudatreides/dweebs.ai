@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, useCallback } from 'react'
+import { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react'
 import { characters as defaultCharacters } from '../data/mockData'
 import { getUserCustomCharacters, saveCustomCharacter as dbSaveChar } from '../lib/db'
 import { useAuth } from './AuthContext'
@@ -30,6 +30,9 @@ function toAppChar(row, creatorProfile) {
 export function CharacterProvider({ children }) {
   const { user, profile } = useAuth()
   const [customCharacters, setCustomCharacters] = useState([])
+  // Always-current ref so callbacks never have stale profile
+  const profileRef = useRef(profile)
+  useEffect(() => { profileRef.current = profile }, [profile])
 
   // Load custom characters when user logs in
   useEffect(() => {
@@ -38,17 +41,17 @@ export function CharacterProvider({ children }) {
       return
     }
     getUserCustomCharacters(user.id)
-      .then(rows => setCustomCharacters(rows.map(row => toAppChar(row, profile))))
+      .then(rows => setCustomCharacters(rows.map(row => toAppChar(row, profileRef.current))))
       .catch(err => console.warn('Failed to load custom characters:', err))
   }, [user])
 
-  // Re-map createdBy when profile updates (e.g. after username change)
+  // Re-map createdBy whenever profile changes (handles the async load race)
   useEffect(() => {
-    if (!profile || customCharacters.length === 0) return
+    if (!profile) return
     setCustomCharacters(prev =>
       prev.map(c => ({ ...c, createdBy: { name: profile.display_name || 'Anonymous', avatar: profile.avatar_url || null } }))
     )
-  }, [profile?.display_name, profile?.avatar_url])
+  }, [profile])
 
   const allCharacters = [...defaultCharacters, ...customCharacters]
 
@@ -73,7 +76,7 @@ export function CharacterProvider({ children }) {
       personality: form.personality,
       isPublic: form.isPublic,
     })
-    const appChar = toAppChar(saved, profile)
+    const appChar = toAppChar(saved, profileRef.current)
     setCustomCharacters(prev => [appChar, ...prev])
     return appChar
   }, [user])
