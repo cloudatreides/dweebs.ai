@@ -450,7 +450,7 @@ export default function Discover() {
       </div>
 
       {/* Filter pills + sort */}
-      <div className="flex items-center gap-2 px-5 mb-4">
+      <div className="flex flex-col md:flex-row md:items-center gap-2 px-5 mb-4">
         <div className="flex gap-2 overflow-x-auto flex-1">
           {FILTERS.map(f => (
             <button
@@ -467,7 +467,7 @@ export default function Discover() {
           ))}
         </div>
         {/* Sort dropdown */}
-        <div className="relative flex-shrink-0">
+        <div className="relative flex-shrink-0 self-start md:self-auto">
           <button
             onClick={() => setSortOpen(o => !o)}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-all"
