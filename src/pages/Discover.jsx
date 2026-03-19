@@ -430,7 +430,7 @@ export default function Discover() {
   const step2Valid = form.bio.trim().length > 0
 
   return (
-    <div className="flex flex-col min-h-dvh md:h-dvh md:overflow-y-auto pb-24 md:pb-8" style={{ background: '#0D0D0F' }}>
+    <div className="flex flex-col h-dvh overflow-y-auto pb-24 md:pb-8" style={{ background: '#0D0D0F' }}>
       {/* Header */}
       <div className="flex items-center justify-between px-5 pt-12 md:pt-8 pb-3">
         <h1 className="text-xl font-bold text-white">Discover</h1>
