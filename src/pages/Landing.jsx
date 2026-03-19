@@ -353,13 +353,13 @@ export default function Landing() {
             </p>
             <div className="flex items-center gap-3">
               <img
-                src="https://api.dicebear.com/9.x/lorelei/png?seed=animelover-xavier&size=80"
+                src="/avatars/aryakoda.jpg"
                 alt="User"
                 className="w-9 h-9 rounded-full object-cover flex-shrink-0"
               />
               <div>
-                <p className="text-sm font-semibold text-white">@animelover_x</p>
-                <p className="text-xs" style={{ color: '#6B7280' }}>Discord · Anime fan</p>
+                <p className="text-sm font-semibold text-white">@aryakoda</p>
+                <p className="text-xs" style={{ color: '#6B7280' }}>Anime fan</p>
               </div>
             </div>
           </motion.div>
