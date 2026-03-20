@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
-import { ChevronLeft, Plus, X, Sparkles, Search } from 'lucide-react'
-import { SCENE_TEMPLATES } from '../data/sceneTemplates'
+import { ChevronLeft, Plus, X, Sparkles, Search, RefreshCw } from 'lucide-react'
+import { SCENE_TEMPLATES, MOODS } from '../data/sceneTemplates'
 import { useAuth } from '../context/AuthContext'
 import { useCharacters } from '../context/CharacterContext'
 import { createChat } from '../lib/db'
@@ -9,6 +9,107 @@ import CharacterAvatar from '../components/CharacterAvatar'
 import BottomSheet from '../components/BottomSheet'
 
 const MAX_SCENE = 200
+
+function pickRandom(arr, n) {
+  const shuffled = [...arr].sort(() => Math.random() - 0.5)
+  return shuffled.slice(0, n)
+}
+
+function resolveTemplate(template, names) {
+  let result = template
+  names.forEach((name, i) => {
+    result = result.replace(new RegExp(`\\{char${i + 1}\\}`, 'g'), name)
+  })
+  result = result.replace(/\{char\d\}/g, names[names.length - 1] || '')
+  return result.slice(0, MAX_SCENE)
+}
+
+function SurpriseSheet({ isOpen, onClose, names, onSelect }) {
+  const [activeMood, setActiveMood] = useState('all')
+  const [suggestions, setSuggestions] = useState([])
+
+  const roll = (mood) => {
+    const pool = mood === 'all'
+      ? SCENE_TEMPLATES
+      : SCENE_TEMPLATES.filter(t => t.mood === mood)
+    setSuggestions(pickRandom(pool, 3))
+  }
+
+  useEffect(() => {
+    if (isOpen) roll(activeMood)
+  }, [isOpen])
+
+  const handleMood = (id) => {
+    setActiveMood(id)
+    roll(id)
+  }
+
+  return (
+    <BottomSheet isOpen={isOpen} onClose={onClose}>
+      <div className="px-5 pb-8 pt-2 flex flex-col gap-4">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-lg font-bold text-white">Surprise Me</h2>
+            <p className="text-xs mt-0.5" style={{ color: '#6B7280' }}>Pick a vibe, tap a scene to use it</p>
+          </div>
+          <button
+            onClick={() => roll(activeMood)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold"
+            style={{ background: 'rgba(124,58,237,0.15)', border: '1px solid rgba(124,58,237,0.3)', color: '#A78BFA' }}
+          >
+            <RefreshCw size={11} />
+            Roll Again
+          </button>
+        </div>
+
+        {/* Mood pills */}
+        <div className="flex gap-2 flex-wrap">
+          {MOODS.map(m => (
+            <button
+              key={m.id}
+              onClick={() => handleMood(m.id)}
+              className="px-3 py-1 rounded-full text-xs font-semibold transition-all"
+              style={activeMood === m.id
+                ? { background: m.color + '28', border: `1px solid ${m.color}66`, color: m.color }
+                : { background: 'transparent', border: '1px solid rgba(255,255,255,0.08)', color: '#6B7280' }
+              }
+            >
+              {m.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Scene cards */}
+        <div className="flex flex-col gap-3">
+          {suggestions.map((t, i) => {
+            const resolved = resolveTemplate(t.text, names)
+            const mood = MOODS.find(m => m.id === t.mood)
+            return (
+              <button
+                key={i}
+                onClick={() => { onSelect(resolved); onClose() }}
+                className="text-left p-4 rounded-2xl flex flex-col gap-2 transition-all active:scale-[0.98]"
+                style={{ background: '#1A1A1F', border: '1px solid rgba(255,255,255,0.06)' }}
+                onMouseEnter={e => e.currentTarget.style.borderColor = 'rgba(124,58,237,0.35)'}
+                onMouseLeave={e => e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)'}
+              >
+                <span
+                  className="text-[10px] font-semibold px-2 py-0.5 rounded-full w-fit"
+                  style={{ background: mood?.color + '20', color: mood?.color }}
+                >
+                  {mood?.label}
+                </span>
+                <p className="text-sm leading-relaxed" style={{ color: '#E5E7EB' }}>{resolved}</p>
+                <span className="text-xs" style={{ color: '#4B5563' }}>Tap to use →</span>
+              </button>
+            )
+          })}
+        </div>
+      </div>
+    </BottomSheet>
+  )
+}
 
 export default function NewChat() {
   const navigate = useNavigate()
@@ -21,10 +122,10 @@ export default function NewChat() {
   const [groupName, setGroupName] = useState('')
   const [scene, setScene] = useState('')
   const [showPicker, setShowPicker] = useState(false)
+  const [showSurprise, setShowSurprise] = useState(false)
   const [creating, setCreating] = useState(false)
   const [charSearch, setCharSearch] = useState('')
 
-  // Set initial group name if preselected
   useEffect(() => {
     if (preselectedId) {
       const char = getCharacter(preselectedId)
@@ -34,6 +135,7 @@ export default function NewChat() {
 
   const selectedChars = selectedIds.map(id => getCharacter(id)).filter(Boolean)
   const available = allCharacters.filter(c => !selectedIds.includes(c.id))
+  const charNames = selectedIds.map(id => getCharacter(id)?.name.split(' ')[0]).filter(Boolean)
 
   const autoName = (ids) => {
     const names = ids.map(id => getCharacter(id)?.name.split(' ')[0]).filter(Boolean)
@@ -51,17 +153,6 @@ export default function NewChat() {
     setSelectedIds(newIds)
     setGroupName(autoName(newIds))
     setShowPicker(false)
-  }
-
-  const surpriseMe = () => {
-    const names = selectedIds.map(id => getCharacter(id)?.name.split(' ')[0]).filter(Boolean)
-    const template = SCENE_TEMPLATES[Math.floor(Math.random() * SCENE_TEMPLATES.length)]
-    let result = template
-    names.forEach((name, i) => {
-      result = result.replace(new RegExp(`\\{char${i + 1}\\}`, 'g'), name)
-    })
-    result = result.replace(/\{char\d\}/g, names[names.length - 1] || '')
-    setScene(result.slice(0, MAX_SCENE))
   }
 
   const canStart = selectedIds.length >= 1
@@ -158,7 +249,7 @@ export default function NewChat() {
               Set the Scene
             </p>
             <button
-              onClick={surpriseMe}
+              onClick={() => setShowSurprise(true)}
               disabled={selectedIds.length === 0}
               className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold transition-opacity"
               style={{
@@ -239,6 +330,14 @@ export default function NewChat() {
           </div>
         </div>
       </BottomSheet>
+
+      {/* Surprise Me Sheet */}
+      <SurpriseSheet
+        isOpen={showSurprise}
+        onClose={() => setShowSurprise(false)}
+        names={charNames}
+        onSelect={setScene}
+      />
     </div>
   )
 }
