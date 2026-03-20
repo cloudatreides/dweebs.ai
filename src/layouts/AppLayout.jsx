@@ -20,7 +20,9 @@ function BetaBanner() {
         <span style={{ color: '#9CA3AF' }}>
           dweebs.lol is in early beta — things may break.{' '}
           <a
-            href="mailto:feedback@dweebs.lol"
+            href="https://x.com/Dweebslol"
+            target="_blank"
+            rel="noopener noreferrer"
             className="underline underline-offset-2 transition-colors"
             style={{ color: '#A78BFA' }}
             onMouseEnter={e => e.target.style.color = '#C4B5FD'}
