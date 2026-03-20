@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 
 export default function Login() {
@@ -147,6 +147,14 @@ export default function Login() {
           >
             {isSignUp ? 'Sign In' : 'Sign Up'}
           </button>
+        </p>
+
+        {/* Legal */}
+        <p className="text-center text-xs mt-4" style={{ color: '#4B5563' }}>
+          By continuing, you agree to our{' '}
+          <Link to="/terms" className="underline hover:opacity-80" style={{ color: '#6B7280' }}>Terms of Service</Link>
+          {' '}and{' '}
+          <Link to="/privacy" className="underline hover:opacity-80" style={{ color: '#6B7280' }}>Privacy Policy</Link>
         </p>
       </div>
     </div>
