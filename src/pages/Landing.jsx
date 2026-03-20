@@ -224,6 +224,7 @@ export default function Landing() {
             <motion.div variants={fadeUp} className="flex items-center gap-3 md:justify-start justify-center">
               <img src="/logo.png" alt="dweebs.lol" className="w-24 h-24 -mr-4 object-contain" />
               <span className="text-lg font-bold text-white">dweebs<span style={{ color: '#7C3AED' }}>.lol</span></span>
+              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full" style={{ background: 'rgba(124,58,237,0.15)', color: '#A78BFA', border: '1px solid rgba(124,58,237,0.3)' }}>BETA</span>
             </motion.div>
 
             <motion.h1 variants={fadeUp} className="text-[30px] md:text-[48px] font-bold leading-tight text-white md:text-left text-center">
