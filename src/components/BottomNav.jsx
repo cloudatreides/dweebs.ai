@@ -1,10 +1,13 @@
+import { useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
-import { Compass, MessageSquare, Plus, User } from 'lucide-react'
+import { Compass, MessageSquare, Plus, User, MessageSquarePlus } from 'lucide-react'
+import FeedbackModal from './FeedbackModal'
 
 export default function BottomNav() {
   const navigate = useNavigate()
   const location = useLocation()
   const path = location.pathname
+  const [showFeedback, setShowFeedback] = useState(false)
 
   const isActive = (route) => path === route || path.startsWith(route + '/')
 
@@ -49,10 +52,12 @@ export default function BottomNav() {
 
       <button
         onClick={() => navigate('/new-chat')}
-        className="flex items-center justify-center w-12 h-12 rounded-full"
-        style={{ background: '#7C3AED' }}
+        className="flex flex-col items-center gap-1"
       >
-        <Plus size={22} color="white" strokeWidth={2.5} />
+        <div className="flex items-center justify-center w-12 h-12 rounded-full" style={{ background: '#7C3AED' }}>
+          <Plus size={22} color="white" strokeWidth={2.5} />
+        </div>
+        <span className="text-[10px]" style={{ color: '#7C3AED' }}>Create</span>
       </button>
 
       <button
@@ -71,6 +76,16 @@ export default function BottomNav() {
           Profile
         </span>
       </button>
+
+      <button
+        onClick={() => setShowFeedback(true)}
+        className="flex flex-col items-center gap-1"
+      >
+        <MessageSquarePlus size={22} color="#6B7280" strokeWidth={1.8} />
+        <span className="text-[10px]" style={{ color: '#6B7280' }}>Feedback</span>
+      </button>
+
+      <FeedbackModal isOpen={showFeedback} onClose={() => setShowFeedback(false)} />
     </div>
   )
 }
