@@ -27,12 +27,22 @@ function resolveTemplate(template, names) {
 function SurpriseSheet({ isOpen, onClose, names, onSelect }) {
   const [activeMood, setActiveMood] = useState('all')
   const [suggestions, setSuggestions] = useState([])
+  const [rolling, setRolling] = useState(false)
 
-  const roll = (mood) => {
+  const roll = (mood, animate = false) => {
     const pool = mood === 'all'
       ? SCENE_TEMPLATES
       : SCENE_TEMPLATES.filter(t => t.mood === mood)
-    setSuggestions(pickRandom(pool, 3))
+    if (animate) {
+      setRolling(true)
+      setSuggestions([])
+      setTimeout(() => {
+        setSuggestions(pickRandom(pool, 3))
+        setRolling(false)
+      }, 900)
+    } else {
+      setSuggestions(pickRandom(pool, 3))
+    }
   }
 
   useEffect(() => {
@@ -54,12 +64,13 @@ function SurpriseSheet({ isOpen, onClose, names, onSelect }) {
             <p className="text-xs mt-0.5" style={{ color: '#6B7280' }}>Pick a vibe, tap a scene to use it</p>
           </div>
           <button
-            onClick={() => roll(activeMood)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold"
-            style={{ background: 'rgba(124,58,237,0.15)', border: '1px solid rgba(124,58,237,0.3)', color: '#A78BFA' }}
+            onClick={() => roll(activeMood, true)}
+            disabled={rolling}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-opacity"
+            style={{ background: 'rgba(124,58,237,0.15)', border: '1px solid rgba(124,58,237,0.3)', color: '#A78BFA', opacity: rolling ? 0.6 : 1 }}
           >
-            <RefreshCw size={11} />
-            Roll Again
+            <RefreshCw size={11} className={rolling ? 'animate-spin' : ''} />
+            {rolling ? 'Rolling...' : 'Roll Again'}
           </button>
         </div>
 
@@ -82,7 +93,14 @@ function SurpriseSheet({ isOpen, onClose, names, onSelect }) {
 
         {/* Scene cards */}
         <div className="flex flex-col gap-3">
-          {suggestions.map((t, i) => {
+          {rolling && [0, 1, 2].map(i => (
+            <div key={i} className="p-4 rounded-2xl flex flex-col gap-2 animate-pulse" style={{ background: '#1A1A1F', border: '1px solid rgba(255,255,255,0.06)' }}>
+              <div className="h-3 w-16 rounded-full" style={{ background: '#2D2D35' }} />
+              <div className="h-3 w-full rounded-full" style={{ background: '#2D2D35' }} />
+              <div className="h-3 w-4/5 rounded-full" style={{ background: '#2D2D35' }} />
+            </div>
+          ))}
+          {!rolling && suggestions.map((t, i) => {
             const resolved = resolveTemplate(t.text, names)
             const mood = MOODS.find(m => m.id === t.mood)
             return (
