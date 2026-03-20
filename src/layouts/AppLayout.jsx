@@ -1,5 +1,7 @@
 import { useState } from 'react'
 import DesktopSidebar from '../components/DesktopSidebar'
+import FeedbackModal from '../components/FeedbackModal'
+import { MessageSquarePlus } from 'lucide-react'
 
 function BetaBanner() {
   const [dismissed, setDismissed] = useState(() => {
@@ -47,6 +49,8 @@ function BetaBanner() {
 }
 
 export default function AppLayout({ children }) {
+  const [showFeedback, setShowFeedback] = useState(false)
+
   return (
     <div className="flex h-dvh overflow-hidden max-w-[1440px] mx-auto" style={{ background: '#0D0D0F' }}>
       {/* Sidebar — desktop only */}
@@ -61,6 +65,18 @@ export default function AppLayout({ children }) {
           {children}
         </div>
       </div>
+
+      {/* Mobile feedback FAB — hidden on desktop */}
+      <button
+        onClick={() => setShowFeedback(true)}
+        className="md:hidden fixed bottom-5 right-5 z-40 flex items-center gap-2 px-4 py-2.5 rounded-full text-sm font-semibold text-white shadow-lg"
+        style={{ background: '#7C3AED' }}
+      >
+        <MessageSquarePlus size={16} />
+        Feedback
+      </button>
+
+      <FeedbackModal isOpen={showFeedback} onClose={() => setShowFeedback(false)} />
     </div>
   )
 }
