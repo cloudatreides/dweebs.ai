@@ -255,6 +255,18 @@ export async function getUserAura(userId) {
   }
 }
 
+// ============================================
+// FEEDBACK
+// ============================================
+
+export async function submitFeedback({ userId, type, message }) {
+  const { error } = await supabase
+    .from('feedback')
+    .insert({ user_id: userId, type, message })
+
+  if (error) throw error
+}
+
 export async function addMessages(messages) {
   const { data, error } = await supabase
     .from('messages')

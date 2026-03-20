@@ -1,15 +1,17 @@
 import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Camera, Check, ArrowLeft } from 'lucide-react'
+import { Camera, Check, ArrowLeft, MessageSquarePlus } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
 import BottomNav from '../components/BottomNav'
 import AuraIcon from '../components/AuraIcon'
+import FeedbackModal from '../components/FeedbackModal'
 
 export default function Profile() {
   const { user, profile, updateProfile } = useAuth()
   const navigate = useNavigate()
   const fileRef = useRef()
+  const [showFeedback, setShowFeedback] = useState(false)
 
   const [username, setUsername] = useState('')
   const [avatarPreview, setAvatarPreview] = useState(null)
@@ -188,9 +190,20 @@ export default function Profile() {
             }
           </button>
 
+          {/* Feedback */}
+          <button
+            onClick={() => setShowFeedback(true)}
+            className="w-full mt-3 py-3 rounded-xl font-semibold text-sm flex items-center justify-center gap-2 transition-opacity hover:opacity-80"
+            style={{ background: '#1A1A1F', border: '1px solid rgba(255,255,255,0.06)', color: '#A78BFA' }}
+          >
+            <MessageSquarePlus size={16} />
+            Share feedback or ideas
+          </button>
+
         </div>
       </div>
       <BottomNav />
+      <FeedbackModal isOpen={showFeedback} onClose={() => setShowFeedback(false)} />
     </div>
   )
 }

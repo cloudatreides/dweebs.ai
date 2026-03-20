@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
-import { Compass, MessageSquare, Plus, User, LogOut, ChevronUp, Gift, Info } from 'lucide-react'
+import { Compass, MessageSquare, Plus, User, LogOut, ChevronUp, Gift, Info, MessageSquarePlus } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useCharacters } from '../context/CharacterContext'
 import { getUserChats, getUserAura } from '../lib/db'
 import AuraIcon from './AuraIcon'
+import FeedbackModal from './FeedbackModal'
 
 export default function DesktopSidebar() {
   const navigate = useNavigate()
@@ -17,6 +18,7 @@ export default function DesktopSidebar() {
   const [chats, setChats] = useState([])
   const [aura, setAura] = useState(0)
   const [auraOpen, setAuraOpen] = useState(false)
+  const [showFeedback, setShowFeedback] = useState(false)
 
   useEffect(() => {
     if (!user) return
@@ -222,6 +224,15 @@ export default function DesktopSidebar() {
         </div>
 
         <button
+          onClick={() => setShowFeedback(true)}
+          className="flex items-center gap-3 px-3 py-2.5 rounded-xl w-full text-left transition-all hover:opacity-80"
+          style={{ color: '#A78BFA' }}
+        >
+          <MessageSquarePlus size={17} strokeWidth={1.8} />
+          <span className="text-sm font-medium">Share feedback</span>
+        </button>
+
+        <button
           onClick={async () => { await signOut(); navigate('/') }}
           className="flex items-center gap-3 px-3 py-2.5 rounded-xl w-full text-left transition-all hover:opacity-80"
           style={{ color: '#6B7280' }}
@@ -230,6 +241,8 @@ export default function DesktopSidebar() {
           <span className="text-sm font-medium">Log out</span>
         </button>
       </div>
+
+      <FeedbackModal isOpen={showFeedback} onClose={() => setShowFeedback(false)} />
     </div>
   )
 }
