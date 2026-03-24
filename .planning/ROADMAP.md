@@ -73,7 +73,12 @@ Plans:
   3. User can delete an individual world fact or user fact and it disappears immediately from the UI and from Supabase
   4. User can clear all memories for a specific world with a single action
   5. Worlds that have never had a memory extraction show an empty state ("No memories yet") rather than a blank section
-**Plans**: TBD
+**Plans:** 2 plans
+
+Plans:
+- [ ] 03-01-PLAN.md — Add db.js functions and build Memory section in Profile.jsx
+- [ ] 03-02-PLAN.md — Visual verification checkpoint
+
 **UI hint**: yes
 
 ---
@@ -85,7 +90,7 @@ Plans:
 | 0. KIG Bug Fix | 0/1 | Not started | - |
 | 1. DB Foundation | 2/2 | Complete   | 2026-03-24 |
 | 2. Memory Backbone | 3/3 | Complete   | 2026-03-24 |
-| 3. Memory UI | 0/3 | Not started | - |
+| 3. Memory UI | 0/2 | Not started | - |
 
 ---
 
