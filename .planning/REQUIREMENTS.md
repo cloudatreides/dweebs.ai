@@ -29,11 +29,11 @@
 
 ### Memory UI
 
-- [ ] **MUI-01**: Profile page shows all per-world memories grouped by world name
-- [ ] **MUI-02**: Profile page shows a global user facts section separate from world memories
-- [ ] **MUI-03**: User can delete individual facts (both world facts and user facts)
-- [ ] **MUI-04**: User can clear all memories for a specific world
-- [ ] **MUI-05**: Memory sections show an empty state ("No memories yet") for worlds with no extracted facts
+- [x] **MUI-01**: Profile page shows all per-world memories grouped by world name
+- [x] **MUI-02**: Profile page shows a global user facts section separate from world memories
+- [x] **MUI-03**: User can delete individual facts (both world facts and user facts)
+- [x] **MUI-04**: User can clear all memories for a specific world
+- [x] **MUI-05**: Memory sections show an empty state ("No memories yet") for worlds with no extracted facts
 
 ## v2 Requirements
 
@@ -76,11 +76,11 @@
 | MINJ-02 | Phase 2 | Complete |
 | MINJ-03 | Phase 2 | Complete |
 | MINJ-04 | Phase 2 | Complete |
-| MUI-01 | Phase 3 | Pending |
-| MUI-02 | Phase 3 | Pending |
-| MUI-03 | Phase 3 | Pending |
-| MUI-04 | Phase 3 | Pending |
-| MUI-05 | Phase 3 | Pending |
+| MUI-01 | Phase 3 | Complete |
+| MUI-02 | Phase 3 | Complete |
+| MUI-03 | Phase 3 | Complete |
+| MUI-04 | Phase 3 | Complete |
+| MUI-05 | Phase 3 | Complete |
 
 **Coverage:**
 - v1 requirements: 18 total

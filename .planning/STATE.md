@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: Ready to plan
-stopped_at: "Completed 02-03-PLAN.md (2026-03-24T10:55:08Z)"
-last_updated: "2026-03-24T10:59:44.895Z"
+status: Executing Phase 03
+stopped_at: Completed 03-01-PLAN.md
+last_updated: "2026-03-24T13:38:06.474Z"
 progress:
   total_phases: 4
   completed_phases: 2
-  total_plans: 6
-  completed_plans: 5
+  total_plans: 8
+  completed_plans: 6
 ---
 
 # Project State: Dweebs.lol
@@ -19,7 +19,7 @@ progress:
 See: `.planning/PROJECT.md` (updated 2026-03-24)
 
 **Core value:** Characters that feel alive — memory makes every world worth coming back to.
-**Current focus:** Phase 02 — memory-backbone
+**Current focus:** Phase 03 — memory-ui
 
 ## Milestone
 
@@ -48,6 +48,9 @@ Goal: Characters remember past conversations and build a model of who the user i
 - [Phase 02-memory-backbone]: Silent memory omission on overflow — chat never fails, memory is best-effort enhancement
 - [Phase 02-memory-backbone]: userMessageCountRef >= 5 guard satisfies MEXT-01 — extraction only fires after meaningful session
 - [Phase 02-memory-backbone]: chatCharactersRef synced on every render (not in useEffect) since chatCharacters is a derived value
+- [Phase 03-memory-ui]: getAllUserWorldMemories takes userId param for consistency with getUserChats pattern rather than calling auth.getUser() internally
+- [Phase 03-memory-ui]: clearWorldMemory deletes the entire world_memories row — simpler than upsert with empty array, matches plan spec
+- [Phase 03-memory-ui]: worldNames lookup built from getUserChats result inline — no extra DB round trip needed
 
 ## Performance Metrics
 
@@ -58,10 +61,11 @@ Goal: Characters remember past conversations and build a model of who the user i
 | Phase 02-memory-backbone P01 | 66 | 1 tasks | 1 files |
 | Phase 02-memory-backbone P02 | 156 | 1 tasks | 2 files |
 | Phase 02-memory-backbone P03 | 300 | 1 tasks | 1 files |
+| Phase 03-memory-ui P01 | 480 | 2 tasks | 2 files |
 
 ## Last Session
 
-Stopped at: Completed 02-03-PLAN.md (2026-03-24T10:55:08Z)
+Stopped at: Completed 03-01-PLAN.md
 
 ## Next Action
 
