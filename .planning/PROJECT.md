@@ -87,4 +87,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state (users, feedback, metrics)
 
 ---
-*Last updated: 2026-03-24 — Phase 1 complete (DB Foundation: world_memories + user_facts tables, RLS policies, and 6 db.js memory CRUD functions shipped)*
+*Last updated: 2026-03-24 — Phase 2 complete (Memory Backbone: memoryApi.js extraction engine, chatApi.js injection, ChatView.jsx wiring all shipped. Memory loop is fully functional end-to-end.)*
