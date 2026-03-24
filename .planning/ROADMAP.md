@@ -55,7 +55,7 @@
 **Plans:** 3 plans
 
 Plans:
-- [ ] 02-01-PLAN.md — Create memoryApi.js with extraction engine and memory block builder
+- [x] 02-01-PLAN.md — Create memoryApi.js with extraction engine and memory block builder
 - [ ] 02-02-PLAN.md — Add memory injection to chatApi.js system prompt
 - [ ] 02-03-PLAN.md — Wire ChatView.jsx with memory loading, passing, and extraction triggers
 
