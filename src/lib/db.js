@@ -285,3 +285,96 @@ export async function addMessages(messages) {
 
   return data
 }
+
+// ============================================
+// MEMORY
+// ============================================
+
+export async function getWorldMemory(worldId) {
+  const { data, error } = await supabase
+    .from('world_memories')
+    .select('*')
+    .eq('world_id', worldId)
+    .maybeSingle()
+
+  if (error) throw error
+  return data
+}
+
+export async function upsertWorldMemory(worldId, facts, summary) {
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('Not authenticated')
+
+  const { data, error } = await supabase
+    .from('world_memories')
+    .upsert(
+      {
+        user_id: user.id,
+        world_id: worldId,
+        facts: JSON.stringify(facts),
+        summary: summary || '',
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: 'user_id,world_id' }
+    )
+    .select()
+    .single()
+
+  if (error) throw error
+  return data
+}
+
+export async function getUserFacts() {
+  const { data, error } = await supabase
+    .from('user_facts')
+    .select('*')
+    .maybeSingle()
+
+  if (error) throw error
+  return data
+}
+
+export async function upsertUserFacts(facts) {
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('Not authenticated')
+
+  const { data, error } = await supabase
+    .from('user_facts')
+    .upsert(
+      {
+        user_id: user.id,
+        facts: JSON.stringify(facts),
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: 'user_id' }
+    )
+    .select()
+    .single()
+
+  if (error) throw error
+  return data
+}
+
+export async function deleteMemoryEntry(worldId, factIndex) {
+  // Fetch current facts, remove by index, write back
+  const memory = await getWorldMemory(worldId)
+  if (!memory) return
+
+  const facts = Array.isArray(memory.facts) ? [...memory.facts] : []
+  if (factIndex < 0 || factIndex >= facts.length) return
+
+  facts.splice(factIndex, 1)
+  return upsertWorldMemory(worldId, facts, memory.summary)
+}
+
+export async function deleteUserFact(factIndex) {
+  // Fetch current facts, remove by index, write back
+  const userFacts = await getUserFacts()
+  if (!userFacts) return
+
+  const facts = Array.isArray(userFacts.facts) ? [...userFacts.facts] : []
+  if (factIndex < 0 || factIndex >= facts.length) return
+
+  facts.splice(factIndex, 1)
+  return upsertUserFacts(facts)
+}
