@@ -1,4 +1,5 @@
 import { supabase } from './supabase'
+import { buildMemoryBlock } from './memoryApi'
 
 const PRIMARY_MODEL = 'claude-haiku-4-5-20251001'
 
@@ -17,7 +18,7 @@ function describeCharacter(c) {
  * Calls Claude with a batched prompt. Tries Sonnet first, falls back to Haiku.
  * Returns an array of { characterId, text } objects — one per responding character.
  */
-export async function getCharacterResponses({ characters, scene, messages, mentionedId }) {
+export async function getCharacterResponses({ characters, scene, messages, mentionedId, worldMemory }) {
 
   const respondingChars = mentionedId
     ? characters.filter(c => c.id === mentionedId)
@@ -27,7 +28,12 @@ export async function getCharacterResponses({ characters, scene, messages, menti
 
   const respondingNames = respondingChars.map(c => label(c)).join(', ')
 
-  const systemPrompt = `You are roleplaying multiple characters in a group text chat. The user ("You") is a friend hanging out in the chat. Characters talk to the user AND to each other naturally.
+  // Build memory block for injection (MINJ-01, MINJ-02, MINJ-04)
+  const memoryBlock = worldMemory
+    ? buildMemoryBlock(worldMemory.memory, worldMemory.userFacts)
+    : ''
+
+  const systemPrompt = `${memoryBlock ? memoryBlock + '\n' : ''}You are roleplaying multiple characters in a group text chat. The user ("You") is a friend hanging out in the chat. Characters talk to the user AND to each other naturally.
 
 CHARACTERS IN THIS CHAT:
 ${charDescriptions}
@@ -47,6 +53,30 @@ FORMAT — respond with EXACTLY this format, one line per character, then sugges
 ${respondingChars.map(c => `${label(c)}: [their response]`).join('\n')}
 SUGGESTIONS: [3 short conversation prompts the user could say next, separated by |]`
 
+  // Safety: if system prompt exceeds 7800 chars with memory, rebuild without memory (MINJ-03)
+  let finalSystemPrompt = systemPrompt
+  if (systemPrompt.length > 7800 && memoryBlock) {
+    finalSystemPrompt = `You are roleplaying multiple characters in a group text chat. The user ("You") is a friend hanging out in the chat. Characters talk to the user AND to each other naturally.
+
+CHARACTERS IN THIS CHAT:
+${charDescriptions}
+
+SCENE: ${scene || 'A casual group chat — just vibing.'}
+
+RULES:
+1. Stay in character at all times. Match each character's speech style, vocabulary, energy level, and emoji habits exactly as described above.
+2. This is a TEXT CHAT — keep every response to 1-3 short sentences max. No monologues.
+3. Characters should react to each other, not just the user. Banter, tease, agree, disagree — make it feel like a real group chat.
+4. No narration, no action text (no *waves*, no *laughs*), no quotation marks around responses. Just raw dialogue.
+5. Don't be sycophantic. Characters can disagree with the user or each other. Not every message needs to be supportive.
+6. NEVER respond with just "..." or ellipsis. Every character must say something real. If a character genuinely has nothing to add, write a short in-character reaction instead.
+7. Only these characters respond this turn: ${respondingNames}
+
+FORMAT — respond with EXACTLY this format, one line per character, then suggestions:
+${respondingChars.map(c => `${label(c)}: [their response]`).join('\n')}
+SUGGESTIONS: [3 short conversation prompts the user could say next, separated by |]`
+  }
+
   const history = messages
     .slice(-16)
     .map(m => {
@@ -64,7 +94,7 @@ SUGGESTIONS: [3 short conversation prompts the user could say next, separated by
     ? `Chat so far:\n${history}\n\nRespond to the latest message from "You". Stay in character.`
     : 'The chat just started. Each character should say something natural to kick things off.'
 
-  const raw = await callWithFallback(systemPrompt, userContent)
+  const raw = await callWithFallback(finalSystemPrompt, userContent)
   const responses = parseResponses(raw, respondingChars)
   const suggestions = parseSuggestions(raw)
   return { responses, suggestions }
