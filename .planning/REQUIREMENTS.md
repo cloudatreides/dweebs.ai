@@ -17,7 +17,7 @@
 
 - [x] **MSTR-01**: `world_memories` table stores per-world facts (capped at 10) and a short world summary (max 200 chars)
 - [x] **MSTR-02**: `user_facts` table stores global user profile facts (capped at 10)
-- [x] **MSTR-03**: Both tables have RLS policies — users can only read and write their own memory rows
+- [ ] **MSTR-03**: Both tables have RLS policies — users can only read and write their own memory rows
 - [x] **MSTR-04**: Memory writes use upsert pattern (not append-only) to prevent unbounded row growth
 
 ### Memory Injection
@@ -70,7 +70,7 @@
 | MEXT-05 | Phase 2 | Pending |
 | MSTR-01 | Phase 1 | Complete |
 | MSTR-02 | Phase 1 | Complete |
-| MSTR-03 | Phase 1 | Complete |
+| MSTR-03 | Phase 1 | Pending |
 | MSTR-04 | Phase 1 | Complete |
 | MINJ-01 | Phase 2 | Pending |
 | MINJ-02 | Phase 2 | Pending |
