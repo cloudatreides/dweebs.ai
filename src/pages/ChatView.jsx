@@ -4,7 +4,8 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { ArrowUp, Pause, ChevronLeft, Plus, Play, Search, Share2 } from 'lucide-react'
 import { getResponse } from '../data/mockResponses'
 import { getCharacterResponses, generateCatchUpMessages, generateNudgeMessage, generateKeepGoing } from '../lib/chatApi'
-import { getChat, getChatMessages, addMessage, addMessages, updateChat, shareWorld, checkDuplicateWorld } from '../lib/db'
+import { getChat, getChatMessages, addMessage, addMessages, updateChat, shareWorld, checkDuplicateWorld, getWorldMemory, getUserFacts } from '../lib/db'
+import { extractAndSaveMemory } from '../lib/memoryApi'
 import AuraIcon from '../components/AuraIcon'
 import { useCharacters } from '../context/CharacterContext'
 import { useAuth } from '../context/AuthContext'
@@ -84,16 +85,35 @@ export default function ChatView() {
   const [shareError, setShareError] = useState('')
   const [loading, setLoading] = useState(true)
 
+  // Memory state
+  const [worldMemory, setWorldMemory] = useState(null)
+
+  // Refs for extraction trigger (avoid stale closures)
+  const messagesRef = useRef([])
+  const chatRef = useRef(null)
+  const chatCharactersRef = useRef([])
+  const userMessageCountRef = useRef(0)
+  const extractionFiredRef = useRef(false)
+
+  // Keep refs in sync with state (for extraction trigger closures)
+  useEffect(() => { messagesRef.current = messages }, [messages])
+  useEffect(() => { chatRef.current = chat }, [chat])
+
   // Load chat + messages from Supabase
   useEffect(() => {
     async function load() {
       try {
-        const [chatData, messagesData] = await Promise.all([
+        const [chatData, messagesData, worldMem, userFacts] = await Promise.all([
           getChat(id),
           getChatMessages(id),
+          getWorldMemory(id).catch(() => null),
+          getUserFacts().catch(() => null),
         ])
         setChat(chatData)
         setChatCharIds(chatData.character_ids)
+        setWorldMemory({ memory: worldMem, userFacts: userFacts })
+        userMessageCountRef.current = 0
+        extractionFiredRef.current = false
         const mapped = messagesData.map(m => ({
           id: m.id,
           type: m.sender_type,
@@ -206,6 +226,7 @@ export default function ChatView() {
 
   const isSolo = chat && chatCharIds.length === 1
   const chatCharacters = chatCharIds.map(cid => getCharacter(cid)).filter(Boolean)
+  chatCharactersRef.current = chatCharacters
   const availableToAdd = allCharacters.filter(c => !chatCharIds.includes(c.id))
 
   useEffect(() => {
@@ -314,6 +335,7 @@ export default function ChatView() {
 
   const sendMessage = async () => {
     if (!input.trim() || typingChar) return
+    userMessageCountRef.current += 1
     const text = input.trim()
 
     // Optimistic UI update
@@ -353,6 +375,7 @@ export default function ChatView() {
         scene: chat.scene,
         messages: currentMessages,
         mentionedId,
+        worldMemory,
       })
 
       // Persist all character responses
@@ -409,6 +432,34 @@ export default function ChatView() {
       }
     }
   }
+
+  // --- Memory Extraction Trigger ---
+  const triggerExtraction = () => {
+    if (extractionFiredRef.current) return
+    if (userMessageCountRef.current < 5) return
+    extractionFiredRef.current = true
+    // Fire-and-forget — no await, never blocks navigation
+    extractAndSaveMemory({
+      chatId: id,
+      messages: messagesRef.current,
+      characters: chatCharactersRef.current,
+      scene: chatRef.current?.scene,
+    })
+  }
+
+  // visibilitychange listener — fires on tab close, tab switch, browser minimize
+  useEffect(() => {
+    const handler = () => {
+      if (document.visibilityState === 'hidden') triggerExtraction()
+    }
+    document.addEventListener('visibilitychange', handler)
+    return () => document.removeEventListener('visibilitychange', handler)
+  }, [])
+
+  // useEffect cleanup — fires on SPA navigation (React Router)
+  useEffect(() => {
+    return () => triggerExtraction()
+  }, [])
 
   const KEEP_GOING_COOLDOWN = 15 * 60 * 1000 // 15 minutes
   const KEEP_GOING_FREE_USES = 2
