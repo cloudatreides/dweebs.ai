@@ -264,3 +264,67 @@ begin
   end if;
 end;
 $$ language plpgsql security definer;
+
+-- ============================================
+-- MEMORY SYSTEM
+-- ============================================
+
+-- Per-world memory: one row per user per world
+create table public.world_memories (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid references auth.users on delete cascade not null,
+  world_id uuid references public.group_chats(id) on delete cascade not null,
+  facts jsonb not null default '[]'::jsonb,
+  summary text not null default '',
+  updated_at timestamptz not null default now(),
+  unique(user_id, world_id)
+);
+
+create index idx_world_memories_user_world on public.world_memories(user_id, world_id);
+
+-- Global user facts: one row per user
+create table public.user_facts (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid references auth.users on delete cascade not null unique,
+  facts jsonb not null default '[]'::jsonb,
+  updated_at timestamptz not null default now()
+);
+
+create index idx_user_facts_user on public.user_facts(user_id);
+
+-- RLS
+alter table public.world_memories enable row level security;
+
+create policy "Users can read own world memories"
+  on public.world_memories for select
+  using (auth.uid() = user_id);
+
+create policy "Users can insert own world memories"
+  on public.world_memories for insert
+  with check (auth.uid() = user_id);
+
+create policy "Users can update own world memories"
+  on public.world_memories for update
+  using (auth.uid() = user_id);
+
+create policy "Users can delete own world memories"
+  on public.world_memories for delete
+  using (auth.uid() = user_id);
+
+alter table public.user_facts enable row level security;
+
+create policy "Users can read own user facts"
+  on public.user_facts for select
+  using (auth.uid() = user_id);
+
+create policy "Users can insert own user facts"
+  on public.user_facts for insert
+  with check (auth.uid() = user_id);
+
+create policy "Users can update own user facts"
+  on public.user_facts for update
+  using (auth.uid() = user_id);
+
+create policy "Users can delete own user facts"
+  on public.user_facts for delete
+  using (auth.uid() = user_id);
