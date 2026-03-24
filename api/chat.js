@@ -2,6 +2,21 @@ import { createClient } from '@supabase/supabase-js'
 
 const ALLOWED_MODELS = ['claude-haiku-4-5-20251001']
 
+// Env var validation — runs once per cold start
+const SUPABASE_URL = (process.env.SUPABASE_URL || '').trim()
+const SUPABASE_ANON_KEY = (process.env.SUPABASE_ANON_KEY || '').trim()
+const ANTHROPIC_API_KEY = (process.env.ANTHROPIC_API_KEY || '').trim()
+
+if (!SUPABASE_URL || !SUPABASE_ANON_KEY || !ANTHROPIC_API_KEY) {
+  console.error('[api/chat] FATAL: Missing required env vars:', {
+    SUPABASE_URL: !!SUPABASE_URL,
+    SUPABASE_ANON_KEY: !!SUPABASE_ANON_KEY,
+    ANTHROPIC_API_KEY: !!ANTHROPIC_API_KEY,
+  })
+} else {
+  console.log('[api/chat] Env vars OK — SUPABASE_ANON_KEY length:', SUPABASE_ANON_KEY.length, '| no newlines:', !SUPABASE_ANON_KEY.includes('\n'))
+}
+
 export default async function handler(req, res) {
   // CORS headers
   res.setHeader('Access-Control-Allow-Origin', '*')
@@ -24,10 +39,7 @@ export default async function handler(req, res) {
 
   const token = authHeader.split(' ')[1]
 
-  const supabase = createClient(
-    process.env.SUPABASE_URL,
-    process.env.SUPABASE_ANON_KEY
-  )
+  const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
 
   const { data: { user }, error: authError } = await supabase.auth.getUser(token)
   if (authError || !user) {
@@ -71,7 +83,7 @@ export default async function handler(req, res) {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'x-api-key': process.env.ANTHROPIC_API_KEY,
+        'x-api-key': ANTHROPIC_API_KEY,
         'anthropic-version': '2023-06-01',
       },
       body: JSON.stringify({

@@ -441,7 +441,6 @@ export default function ChatView() {
   }
 
   const handleKeepGoing = async () => {
-    console.log('[KIG] clicked — canKeepGoing:', canKeepGoing, '| charIds:', chatCharIds.length, '| typingChar:', !!typingChar, '| active:', keepGoingActive, '| onCooldown:', keepGoingOnCooldown)
     if (!canKeepGoing) return
     setKeepGoingActive(true)
     setKeepGoingError('')
