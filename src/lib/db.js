@@ -378,3 +378,23 @@ export async function deleteUserFact(factIndex) {
   facts.splice(factIndex, 1)
   return upsertUserFacts(facts)
 }
+
+export async function getAllUserWorldMemories(userId) {
+  const { data, error } = await supabase
+    .from('world_memories')
+    .select('*')
+    .eq('user_id', userId)
+    .order('updated_at', { ascending: false })
+
+  if (error) throw error
+  return data || []
+}
+
+export async function clearWorldMemory(worldId) {
+  const { error } = await supabase
+    .from('world_memories')
+    .delete()
+    .eq('world_id', worldId)
+
+  if (error) throw error
+}
