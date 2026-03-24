@@ -10,7 +10,7 @@
 
 - [x] **Phase 0: KIG Bug Fix** - Resolve the Keep It Going 401 error blocking production before memory ships
 - [x] **Phase 1: DB Foundation** - Stand up the two new memory tables with RLS and read/write functions in db.js (completed 2026-03-24)
-- [ ] **Phase 2: Memory Backbone** - Wire extraction and injection end-to-end so characters reference memories in chat
+- [x] **Phase 2: Memory Backbone** - Wire extraction and injection end-to-end so characters reference memories in chat (completed 2026-03-24)
 - [ ] **Phase 3: Memory UI** - Surface stored memories on the Profile page with view and delete controls
 
 ---
@@ -52,12 +52,12 @@
   3. Extraction never blocks navigation — the chat page closes immediately and extraction runs in the background
   4. A world with a system prompt near the 8000-char limit still loads and chats successfully — memory is silently omitted rather than breaking the request
   5. Extracted facts include a source field (verbatim quote) and are capped at 5 world facts + 3 user facts per extraction run
-**Plans:** 3 plans
+**Plans:** 3/3 plans complete
 
 Plans:
 - [x] 02-01-PLAN.md — Create memoryApi.js with extraction engine and memory block builder
 - [x] 02-02-PLAN.md — Add memory injection to chatApi.js system prompt
-- [ ] 02-03-PLAN.md — Wire ChatView.jsx with memory loading, passing, and extraction triggers
+- [x] 02-03-PLAN.md — Wire ChatView.jsx with memory loading, passing, and extraction triggers
 
 **UI hint**: no
 
@@ -84,7 +84,7 @@ Plans:
 |-------|----------------|--------|-----------|
 | 0. KIG Bug Fix | 0/1 | Not started | - |
 | 1. DB Foundation | 2/2 | Complete   | 2026-03-24 |
-| 2. Memory Backbone | 0/3 | Not started | - |
+| 2. Memory Backbone | 3/3 | Complete   | 2026-03-24 |
 | 3. Memory UI | 0/3 | Not started | - |
 
 ---

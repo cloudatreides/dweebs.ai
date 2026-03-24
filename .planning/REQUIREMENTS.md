@@ -10,7 +10,7 @@
 - [x] **MEXT-01**: System extracts key facts from conversation after every 5+ user messages
 - [x] **MEXT-02**: Extraction produces structured JSON with `fact`, `source` (verbatim quote), and `category` fields
 - [x] **MEXT-03**: Extraction resolves contradictions — new facts replace contradicted existing facts rather than appending alongside them
-- [ ] **MEXT-04**: Extraction triggers on chat session end (tab close / navigation away), not on every turn
+- [x] **MEXT-04**: Extraction triggers on chat session end (tab close / navigation away), not on every turn
 - [x] **MEXT-05**: Extraction uses a windowed last-30-messages slice, not full unbounded history
 
 ### Memory Storage
@@ -66,7 +66,7 @@
 | MEXT-01 | Phase 2 | Complete |
 | MEXT-02 | Phase 2 | Complete |
 | MEXT-03 | Phase 2 | Complete |
-| MEXT-04 | Phase 2 | Pending |
+| MEXT-04 | Phase 2 | Complete |
 | MEXT-05 | Phase 2 | Complete |
 | MSTR-01 | Phase 1 | Complete |
 | MSTR-02 | Phase 1 | Complete |
