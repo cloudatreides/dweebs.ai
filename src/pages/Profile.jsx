@@ -9,6 +9,93 @@ import BottomNav from '../components/BottomNav'
 import AuraIcon from '../components/AuraIcon'
 import FeedbackModal from '../components/FeedbackModal'
 
+const FORMING_WORDS = ['Chat in a world', 'and characters', 'will start', 'remembering you.']
+
+function MemoriesFormingState({ compact = false }) {
+  const orbs = [
+    { size: 6, x: '15%', delay: 0, duration: 2.8 },
+    { size: 4, x: '40%', delay: 0.6, duration: 3.2 },
+    { size: 8, x: '65%', delay: 1.1, duration: 2.5 },
+    { size: 5, x: '82%', delay: 0.3, duration: 3.6 },
+    { size: 3, x: '55%', delay: 1.8, duration: 2.9 },
+  ]
+
+  if (compact) {
+    return (
+      <div className="px-3 py-3 flex items-center gap-2">
+        {[0, 1, 2].map(i => (
+          <motion.div
+            key={i}
+            className="rounded-full flex-shrink-0"
+            style={{ width: 6, height: 6, background: '#7C3AED' }}
+            animate={{ opacity: [0.2, 1, 0.2], scale: [0.8, 1.2, 0.8] }}
+            transition={{ duration: 1.6, delay: i * 0.3, repeat: Infinity, ease: 'easeInOut' }}
+          />
+        ))}
+        <span className="text-sm" style={{ color: '#6B7280' }}>Memories forming…</span>
+      </div>
+    )
+  }
+
+  return (
+    <div className="py-6 px-4 flex flex-col items-center gap-4">
+      {/* Orb field */}
+      <div className="relative w-full h-12">
+        {orbs.map((orb, i) => (
+          <motion.div
+            key={i}
+            className="absolute rounded-full"
+            style={{
+              width: orb.size * 4,
+              height: orb.size * 4,
+              left: orb.x,
+              top: '50%',
+              translateY: '-50%',
+              background: `radial-gradient(circle, #A78BFA, #7C3AED)`,
+              boxShadow: `0 0 ${orb.size * 3}px #7C3AED88`,
+            }}
+            animate={{
+              opacity: [0.15, 0.9, 0.15],
+              scale: [0.7, 1.1, 0.7],
+              y: ['-50%', 'calc(-50% - 4px)', '-50%'],
+            }}
+            transition={{
+              duration: orb.duration,
+              delay: orb.delay,
+              repeat: Infinity,
+              ease: 'easeInOut',
+            }}
+          />
+        ))}
+      </div>
+
+      {/* Typewriter label */}
+      <motion.p
+        className="text-xs font-medium tracking-widest uppercase"
+        style={{ color: '#7C3AED' }}
+        animate={{ opacity: [0.4, 1, 0.4] }}
+        transition={{ duration: 2.4, repeat: Infinity, ease: 'easeInOut' }}
+      >
+        Memories are forming
+      </motion.p>
+
+      {/* Word-by-word description */}
+      <p className="text-sm text-center" style={{ color: '#6B7280' }}>
+        {FORMING_WORDS.map((word, i) => (
+          <motion.span
+            key={i}
+            initial={{ opacity: 0, y: 4 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 + i * 0.18, duration: 0.4 }}
+          >
+            {word}{' '}
+          </motion.span>
+        ))}
+      </p>
+    </div>
+  )
+}
+
 export default function Profile() {
   const { user, profile, updateProfile } = useAuth()
   const navigate = useNavigate()
@@ -335,7 +422,7 @@ export default function Profile() {
                         ))}
                       </AnimatePresence>
                     ) : (
-                      <p className="text-sm px-3 py-2" style={{ color: '#6B7280' }}>No memories yet</p>
+                      <MemoriesFormingState compact />
                     )}
                   </div>
                 </div>
@@ -417,11 +504,8 @@ export default function Profile() {
                     )
                   })
                 ) : (
-                  /* Only show this if user facts are also empty — truly no memories at all */
                   parseFacts(userFactsData?.facts).length === 0 && (
-                    <p className="text-sm text-center py-4" style={{ color: '#6B7280' }}>
-                      No memories yet. Chat in a world and characters will start remembering you.
-                    </p>
+                    <MemoriesFormingState />
                   )
                 )}
               </>
