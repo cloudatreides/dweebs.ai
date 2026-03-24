@@ -9,7 +9,7 @@
 ## Phases
 
 - [x] **Phase 0: KIG Bug Fix** - Resolve the Keep It Going 401 error blocking production before memory ships
-- [ ] **Phase 1: DB Foundation** - Stand up the two new memory tables with RLS and read/write functions in db.js
+- [x] **Phase 1: DB Foundation** - Stand up the two new memory tables with RLS and read/write functions in db.js (completed 2026-03-24)
 - [ ] **Phase 2: Memory Backbone** - Wire extraction and injection end-to-end so characters reference memories in chat
 - [ ] **Phase 3: Memory UI** - Surface stored memories on the Profile page with view and delete controls
 
@@ -77,7 +77,7 @@
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 0. KIG Bug Fix | 0/1 | Not started | - |
-| 1. DB Foundation | 0/3 | Not started | - |
+| 1. DB Foundation | 2/2 | Complete   | 2026-03-24 |
 | 2. Memory Backbone | 0/4 | Not started | - |
 | 3. Memory UI | 0/3 | Not started | - |
 
