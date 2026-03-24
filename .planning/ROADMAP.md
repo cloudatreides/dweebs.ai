@@ -52,7 +52,13 @@
   3. Extraction never blocks navigation — the chat page closes immediately and extraction runs in the background
   4. A world with a system prompt near the 8000-char limit still loads and chats successfully — memory is silently omitted rather than breaking the request
   5. Extracted facts include a source field (verbatim quote) and are capped at 5 world facts + 3 user facts per extraction run
-**Plans**: TBD
+**Plans:** 3 plans
+
+Plans:
+- [ ] 02-01-PLAN.md — Create memoryApi.js with extraction engine and memory block builder
+- [ ] 02-02-PLAN.md — Add memory injection to chatApi.js system prompt
+- [ ] 02-03-PLAN.md — Wire ChatView.jsx with memory loading, passing, and extraction triggers
+
 **UI hint**: no
 
 ---
@@ -78,7 +84,7 @@
 |-------|----------------|--------|-----------|
 | 0. KIG Bug Fix | 0/1 | Not started | - |
 | 1. DB Foundation | 2/2 | Complete   | 2026-03-24 |
-| 2. Memory Backbone | 0/4 | Not started | - |
+| 2. Memory Backbone | 0/3 | Not started | - |
 | 3. Memory UI | 0/3 | Not started | - |
 
 ---
