@@ -22,10 +22,10 @@
 
 ### Memory Injection
 
-- [ ] **MINJ-01**: World memory (facts + summary) is injected into the system prompt for every chat turn in that world
-- [ ] **MINJ-02**: Global user facts are injected into every world's system prompt
-- [ ] **MINJ-03**: Memory block is hard-capped at 400 tokens — silently omitted if limit would be exceeded rather than failing the chat
-- [ ] **MINJ-04**: Memory block is injected at the top of the system prompt (primacy effect)
+- [x] **MINJ-01**: World memory (facts + summary) is injected into the system prompt for every chat turn in that world
+- [x] **MINJ-02**: Global user facts are injected into every world's system prompt
+- [x] **MINJ-03**: Memory block is hard-capped at 400 tokens — silently omitted if limit would be exceeded rather than failing the chat
+- [x] **MINJ-04**: Memory block is injected at the top of the system prompt (primacy effect)
 
 ### Memory UI
 
@@ -72,10 +72,10 @@
 | MSTR-02 | Phase 1 | Complete |
 | MSTR-03 | Phase 1 | Pending |
 | MSTR-04 | Phase 1 | Complete |
-| MINJ-01 | Phase 2 | Pending |
-| MINJ-02 | Phase 2 | Pending |
-| MINJ-03 | Phase 2 | Pending |
-| MINJ-04 | Phase 2 | Pending |
+| MINJ-01 | Phase 2 | Complete |
+| MINJ-02 | Phase 2 | Complete |
+| MINJ-03 | Phase 2 | Complete |
+| MINJ-04 | Phase 2 | Complete |
 | MUI-01 | Phase 3 | Pending |
 | MUI-02 | Phase 3 | Pending |
 | MUI-03 | Phase 3 | Pending |
