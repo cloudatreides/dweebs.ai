@@ -6,6 +6,7 @@ import { AuthProvider } from './context/AuthContext'
 import { CharacterProvider } from './context/CharacterContext'
 import { TierProvider } from './context/TierContext'
 import { Analytics } from '@vercel/analytics/react'
+import { SpeedInsights } from '@vercel/speed-insights/react'
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
@@ -14,6 +15,7 @@ createRoot(document.getElementById('root')).render(
         <CharacterProvider>
           <App />
           <Analytics />
+          <SpeedInsights />
         </CharacterProvider>
       </TierProvider>
     </AuthProvider>
