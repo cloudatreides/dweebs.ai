@@ -16,11 +16,11 @@ const stagger = {
 
 // --- Live preview chat loop ---
 const PREVIEW_LOOP = [
-  { type: 'char', id: 'miku',   text: "Should we open with the acoustic set? Something more intimate 🎵" },
-  { type: 'user',               text: "omg yes — vulnerability first, then drop the banger" },
-  { type: 'char', id: 'ariana', text: "YESSS. Acoustic first, then we blow the roof off 🌹" },
-  { type: 'char', id: 'miku',   text: "J-Hope might be free that weekend too 👀" },
-  { type: 'user',               text: "this collab is actually happening?? I need tickets 🔥" },
+  { type: 'char', id: 'gojo',   text: "Finally. A group chat worthy of my presence. 😎" },
+  { type: 'char', id: 'sukuna', text: "Don't flatter yourself. I'm only here because this amuses me." },
+  { type: 'user',               text: "okay real talk — who's actually stronger between you two" },
+  { type: 'char', id: 'toji',   text: "Neither. They're both too busy talking about it." },
+  { type: 'char', id: 'sukuna', text: "...The Zenin trash speaks. Interesting." },
 ]
 
 function LiveChatPreview() {
@@ -68,7 +68,7 @@ function LiveChatPreview() {
       {/* Header */}
       <div className="flex items-center gap-2 mb-3">
         <div className="flex -space-x-2">
-          {['miku', 'ariana', 'jungkook'].map((id, i) => {
+          {['gojo', 'sukuna', 'toji'].map((id, i) => {
             const c = characters.find(x => x.id === id)
             return (
               <div key={id} className="w-7 h-7 rounded-full overflow-hidden flex-shrink-0"
@@ -79,7 +79,7 @@ function LiveChatPreview() {
           })}
         </div>
         <div className="flex flex-col">
-          <span className="text-sm font-semibold text-white leading-tight">The Collab</span>
+          <span className="text-sm font-semibold text-white leading-tight">Cursed Rivals</span>
           <span className="text-[10px]" style={{ color: '#6B7280' }}>3 characters · group chat</span>
         </div>
         <div className="ml-auto flex items-center gap-1">
@@ -228,7 +228,7 @@ export default function Landing() {
             </motion.div>
 
             <motion.h1 variants={fadeUp} className="text-[30px] md:text-[48px] font-bold leading-tight text-white md:text-left text-center">
-              Come back to a world that missed you.
+              What if your favourite characters were in the same group chat?
             </motion.h1>
 
             <motion.p variants={fadeUp} className="text-[14px] md:text-[16px] leading-relaxed md:text-left text-center" style={{ color: '#9CA3AF' }}>
@@ -236,7 +236,7 @@ export default function Landing() {
             </motion.p>
 
             <motion.div variants={fadeUp} className="flex flex-wrap gap-2 md:justify-start justify-center">
-              {['💬 Characters That Talk to Each Other', '🌐 Mix Any Fandom', '⚡ Always Live'].map(label => (
+              {['💬 Characters That Talk to Each Other', '⚔️ Built-in rivalries & tension', '⚡ Always Live'].map(label => (
                 <span key={label} className="text-xs px-3 py-1.5 rounded-full" style={{ background: 'rgba(124,58,237,0.12)', color: '#A78BFA', border: '1px solid rgba(124,58,237,0.25)' }}>
                   {label}
                 </span>
