@@ -92,7 +92,7 @@ SUGGESTIONS: [3 short conversation prompts the user could say next, separated by
 
   const userContent = history
     ? `Chat so far:\n${history}\n\nRespond to the latest message from "You". Stay in character.`
-    : 'The chat just started. Each character should say something natural to kick things off.'
+    : 'The chat just started and the user just joined. Do NOT give generic welcome greetings. Instead, characters are already mid-dynamic when the user arrives — one is making an observation, another reacting, a third jumping in. The user walks in on something already happening. Make the first exchange feel like they opened a group chat that was alive before they got there.'
 
   const raw = await callWithFallback(finalSystemPrompt, userContent)
   const responses = parseResponses(raw, respondingChars)
@@ -399,6 +399,83 @@ ${talkers.map(c => `${label(c)}: [message]`).join('\n')}`
     console.warn('Nudge generation failed:', err.message)
     return []
   }
+}
+
+/**
+ * Generate 2 choice options for Director Mode.
+ * Called every 4th AI message. Returns { choices: [string, string] }.
+ */
+export async function generateChoiceOptions({ characters, scene, messages }) {
+  const charNames = characters.map(c => c.name).join(', ')
+
+  const history = messages
+    .slice(-12)
+    .map(m => {
+      if (m.type === 'user') return `You: ${m.text}`
+      if (m.type === 'character') {
+        const char = characters.find(c => c.id === m.characterId)
+        return char ? `${label(char)}: ${m.text}` : null
+      }
+      return null
+    })
+    .filter(Boolean)
+    .join('\n')
+
+  const systemPrompt = `You generate narrative choice options for a group chat director mode. Given a conversation between characters, generate exactly 2 short choices (max 8 words each) that would take the scene in dramatically different directions.
+
+CHARACTERS: ${charNames}
+SCENE: ${scene || 'A casual group chat.'}
+
+Respond with ONLY valid JSON: { "choices": ["option A", "option B"] }
+No markdown, no explanation.`
+
+  const userContent = `Recent conversation:\n${history}\n\nGenerate 2 choices for what happens next.`
+
+  try {
+    const raw = await callWithFallback(systemPrompt, userContent)
+    const cleaned = raw.replace(/```json?\n?/g, '').replace(/```/g, '').trim()
+    const parsed = JSON.parse(cleaned)
+    if (Array.isArray(parsed.choices) && parsed.choices.length === 2) {
+      return parsed
+    }
+    return null
+  } catch {
+    return null
+  }
+}
+
+/**
+ * Generate a scene summary for the End Scene card.
+ * Returns { title: string, summary: string }.
+ */
+export async function generateSceneSummary({ characters, messages }) {
+  const charNames = characters.map(c => c.name).join(', ')
+
+  const history = messages
+    .slice(-20)
+    .map(m => {
+      if (m.type === 'user') return `You: ${m.text}`
+      if (m.type === 'character') {
+        const char = characters.find(c => c.id === m.characterId)
+        return char ? `${label(char)}: ${m.text}` : null
+      }
+      return null
+    })
+    .filter(Boolean)
+    .join('\n')
+
+  const systemPrompt = `You summarize group chat scenes. Given a conversation, provide a dramatic title and a 3-sentence summary that captures the key moments and tension.
+
+CHARACTERS: ${charNames}
+
+Respond with ONLY valid JSON: { "title": "Scene Title Here", "summary": "Three sentence summary here." }
+No markdown, no explanation.`
+
+  const userContent = `Conversation to summarize:\n${history}`
+
+  const raw = await callWithFallback(systemPrompt, userContent)
+  const cleaned = raw.replace(/```json?\n?/g, '').replace(/```/g, '').trim()
+  return JSON.parse(cleaned)
 }
 
 /**
