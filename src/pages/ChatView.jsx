@@ -91,6 +91,20 @@ export default function ChatView() {
   // Memory state
   const [worldMemory, setWorldMemory] = useState(null)
 
+  // Director Mode state
+  const [directorActive, setDirectorActive] = useState(false)
+  const [directorChoices, setDirectorChoices] = useState([]) // last 3 chosen options
+  const [directorTwist, setDirectorTwist] = useState(null)   // last 1 plot twist
+  const [choiceOptions, setChoiceOptions] = useState(null)    // current pending { choices: [str,str] }
+  const [choiceLoading, setChoiceLoading] = useState(false)
+  const [plotTwistOpen, setPlotTwistOpen] = useState(false)
+  const [showSummary, setShowSummary] = useState(false)
+  const [summaryData, setSummaryData] = useState(null)
+  const [summaryLoading, setSummaryLoading] = useState(false)
+  const [summaryError, setSummaryError] = useState('')
+  const aiMessageCountRef = useRef(0)
+  const chosenMessages = useRef(new Set()) // track which message indices have collapsed choice logs
+
   // Refs for extraction trigger (avoid stale closures)
   const messagesRef = useRef([])
   const chatRef = useRef(null)
@@ -379,6 +393,7 @@ export default function ChatView() {
         messages: currentMessages,
         mentionedId,
         worldMemory,
+        directorNotes: buildDirectorNotes(),
       })
 
       // Persist all character responses
@@ -410,6 +425,13 @@ export default function ChatView() {
           setTypingChar(chatCharacters.find(c => c.id === responses[i + 1].characterId) || null)
         }
       }
+      // Count AI messages for Director Mode choice cards
+      aiMessageCountRef.current += responses.length
+      if (chatCharIds.length >= 2 && aiMessageCountRef.current >= 4 && !choiceOptions) {
+        aiMessageCountRef.current = 0
+        tryGenerateChoices()
+      }
+
       // Show conversation suggestions
       if (suggestions?.length > 0) setPromptSuggestions(suggestions)
     } catch (err) {
@@ -464,6 +486,97 @@ export default function ChatView() {
     return () => triggerExtraction()
   }, [])
 
+  // Build director notes string for system prompt injection
+  const buildDirectorNotes = () => {
+    const parts = []
+    for (const choice of directorChoices) {
+      parts.push(`[DIRECTOR NOTE: The scene shifts — ${choice}. Characters should react to this change naturally.]`)
+    }
+    if (directorTwist) {
+      parts.push(`[PLOT TWIST: ${directorTwist}. All characters should react to this event in their next responses.]`)
+    }
+    return parts.length > 0 ? parts.join('\n') : undefined
+  }
+
+  // Handle choice card selection
+  const handleDirectorChoice = (choice) => {
+    setDirectorActive(true)
+    setDirectorChoices(prev => [...prev.slice(-2), choice]) // keep last 3
+    setChoiceOptions(null)
+    // Add a system message showing the choice
+    const choiceMsg = {
+      id: 'director-choice-' + Date.now(),
+      type: 'system',
+      text: `🎬 You chose: ${choice}`,
+      timestamp: 'now',
+    }
+    setMessages(prev => [...prev, choiceMsg])
+  }
+
+  // Handle plot twist submission
+  const handlePlotTwist = (text) => {
+    setDirectorActive(true)
+    setDirectorTwist(text)
+    setPlotTwistOpen(false)
+    const twistMsg = {
+      id: 'director-twist-' + Date.now(),
+      type: 'system',
+      text: `⚡ Plot twist: ${text}`,
+      timestamp: 'now',
+    }
+    setMessages(prev => [...prev, twistMsg])
+  }
+
+  // Handle End Scene
+  const handleEndScene = async () => {
+    if (summaryLoading) return
+    setSummaryLoading(true)
+    setSummaryError('')
+    try {
+      const data = await generateSceneSummary({
+        characters: chatCharacters,
+        messages,
+      })
+      setSummaryData(data)
+      setShowSummary(true)
+    } catch (err) {
+      console.error('Scene summary failed:', err)
+      setSummaryError("Couldn't generate summary — try again")
+      setTimeout(() => setSummaryError(''), 3000)
+    } finally {
+      setSummaryLoading(false)
+    }
+  }
+
+  // Reset Director Mode
+  const resetDirectorMode = () => {
+    setDirectorActive(false)
+    setDirectorChoices([])
+    setDirectorTwist(null)
+    setChoiceOptions(null)
+    aiMessageCountRef.current = 0
+    setShowSummary(false)
+    setSummaryData(null)
+  }
+
+  // Try to generate choice options (called after AI messages)
+  const tryGenerateChoices = async () => {
+    if (choiceOptions || choiceLoading) return
+    setChoiceLoading(true)
+    try {
+      const result = await generateChoiceOptions({
+        characters: chatCharacters,
+        scene: chat?.scene,
+        messages,
+      })
+      if (result) setChoiceOptions(result)
+    } catch {
+      // silently skip
+    } finally {
+      setChoiceLoading(false)
+    }
+  }
+
   const KEEP_GOING_COOLDOWN = 15 * 60 * 1000 // 15 minutes
   const KEEP_GOING_FREE_USES = 2
 
@@ -483,7 +596,7 @@ export default function ChatView() {
   const keepGoingCooldownExpiry = getKeepGoingCooldown()
   const keepGoingOnCooldown = !!keepGoingCooldownExpiry
   const keepGoingUsesLeft = getKeepGoingUsesLeft()
-  const canKeepGoing = chatCharIds.length >= 2 && !typingChar && !keepGoingActive && !keepGoingOnCooldown
+  const canKeepGoing = chatCharIds.length >= 2 && !typingChar && !keepGoingActive && !keepGoingOnCooldown && !directorActive
   const showKeepGoing = chatCharIds.length >= 2
 
   const formatCooldown = () => {
@@ -780,6 +893,25 @@ export default function ChatView() {
           )}
         </AnimatePresence>
 
+        {/* Director Mode: Choice Card */}
+        <AnimatePresence>
+          {choiceOptions && chatCharIds.length >= 2 && (
+            <motion.div
+              key="choice-card"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className="w-full"
+            >
+              <ChoiceCard
+                choices={choiceOptions.choices}
+                onChoose={handleDirectorChoice}
+                loading={false}
+              />
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         <div ref={bottomRef} />
       </div>
 
@@ -875,6 +1007,48 @@ export default function ChatView() {
         )}
       </AnimatePresence>
 
+      {/* Director Mode toolbar (group chats only) */}
+      {chatCharIds.length >= 2 && (
+        <div className="px-4 pt-1.5 pb-1 flex items-center gap-2 flex-shrink-0">
+          <button
+            onClick={() => setPlotTwistOpen(!plotTwistOpen)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all"
+            style={plotTwistOpen
+              ? { background: '#FBBF2422', color: '#FBBF24', border: '1px solid #FBBF2444' }
+              : { background: '#1A1A1F', color: '#9CA3AF', border: '1px solid rgba(255,255,255,0.08)' }}
+          >
+            <Zap size={12} />
+            Plot Twist
+          </button>
+          <button
+            onClick={handleEndScene}
+            disabled={summaryLoading || messages.length < 4}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all"
+            style={{ background: '#1A1A1F', color: '#9CA3AF', border: '1px solid rgba(255,255,255,0.08)', opacity: (summaryLoading || messages.length < 4) ? 0.4 : 1 }}
+          >
+            {summaryLoading
+              ? <span className="w-2.5 h-2.5 rounded-full border border-current border-t-transparent animate-spin" />
+              : <Flag size={12} />}
+            End Scene
+          </button>
+          {summaryError && (
+            <span className="text-xs" style={{ color: '#EF4444' }}>{summaryError}</span>
+          )}
+        </div>
+      )}
+
+      {/* Plot Twist Panel */}
+      <AnimatePresence>
+        {plotTwistOpen && (
+          <div className="px-4 pb-1 flex-shrink-0">
+            <PlotTwistPanel
+              onSubmit={handlePlotTwist}
+              onClose={() => setPlotTwistOpen(false)}
+            />
+          </div>
+        )}
+      </AnimatePresence>
+
       {/* Input */}
       <div className="px-4 pb-6 pt-2 flex items-center gap-3 flex-shrink-0" style={{ borderTop: '1px solid rgba(255,255,255,0.05)', background: '#0D0D0F' }}>
         <input
@@ -963,6 +1137,24 @@ export default function ChatView() {
       <BottomSheet isOpen={showUpgradeModal} onClose={() => setShowUpgradeModal(false)}>
         <UpgradeModal onClose={() => setShowUpgradeModal(false)} />
       </BottomSheet>
+
+      {/* Scene Summary Overlay */}
+      <AnimatePresence>
+        {showSummary && summaryData && (
+          <SceneSummaryCard
+            title={summaryData.title}
+            summary={summaryData.summary}
+            characters={chatCharacters}
+            onNewScene={() => {
+              resetDirectorMode()
+              navigate('/new-chat')
+            }}
+            onClose={() => {
+              resetDirectorMode()
+            }}
+          />
+        )}
+      </AnimatePresence>
 
       {/* Share World Sheet */}
       <BottomSheet isOpen={showShareSheet} onClose={() => setShowShareSheet(false)}>

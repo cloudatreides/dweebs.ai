@@ -18,7 +18,7 @@ function describeCharacter(c) {
  * Calls Claude with a batched prompt. Tries Sonnet first, falls back to Haiku.
  * Returns an array of { characterId, text } objects — one per responding character.
  */
-export async function getCharacterResponses({ characters, scene, messages, mentionedId, worldMemory }) {
+export async function getCharacterResponses({ characters, scene, messages, mentionedId, worldMemory, directorNotes }) {
 
   const respondingChars = mentionedId
     ? characters.filter(c => c.id === mentionedId)
@@ -53,8 +53,11 @@ FORMAT — respond with EXACTLY this format, one line per character, then sugges
 ${respondingChars.map(c => `${label(c)}: [their response]`).join('\n')}
 SUGGESTIONS: [3 short conversation prompts the user could say next, separated by |]`
 
+  // Director Mode injection suffix
+  const directorSuffix = directorNotes ? `\n\n${directorNotes}` : ''
+
   // Safety: if system prompt exceeds 7800 chars with memory, rebuild without memory (MINJ-03)
-  let finalSystemPrompt = systemPrompt
+  let finalSystemPrompt = systemPrompt + directorSuffix
   if (systemPrompt.length > 7800 && memoryBlock) {
     finalSystemPrompt = `You are roleplaying multiple characters in a group text chat. The user ("You") is a friend hanging out in the chat. Characters talk to the user AND to each other naturally.
 
@@ -74,7 +77,7 @@ RULES:
 
 FORMAT — respond with EXACTLY this format, one line per character, then suggestions:
 ${respondingChars.map(c => `${label(c)}: [their response]`).join('\n')}
-SUGGESTIONS: [3 short conversation prompts the user could say next, separated by |]`
+SUGGESTIONS: [3 short conversation prompts the user could say next, separated by |]` + directorSuffix
   }
 
   const history = messages
