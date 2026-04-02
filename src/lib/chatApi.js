@@ -478,7 +478,11 @@ No markdown, no explanation.`
 
   const raw = await callWithFallback(systemPrompt, userContent)
   const cleaned = raw.replace(/```json?\n?/g, '').replace(/```/g, '').trim()
-  return JSON.parse(cleaned)
+  try {
+    return JSON.parse(cleaned)
+  } catch {
+    return { title: 'Scene Complete', summary: 'An unforgettable scene unfolded. The characters brought their world to life.' }
+  }
 }
 
 /**

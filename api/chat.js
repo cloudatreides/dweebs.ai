@@ -3,8 +3,10 @@ import { createClient } from '@supabase/supabase-js'
 const ALLOWED_MODELS = ['claude-haiku-4-5-20251001']
 
 // Env var validation — runs once per cold start
+// Use replace(/\s/g, '') to strip embedded newlines (not just leading/trailing),
+// which can happen when copy-pasting JWTs into Vercel env var fields.
 const SUPABASE_URL = (process.env.SUPABASE_URL || '').trim()
-const SUPABASE_ANON_KEY = (process.env.SUPABASE_ANON_KEY || '').trim()
+const SUPABASE_ANON_KEY = (process.env.SUPABASE_ANON_KEY || '').replace(/\s/g, '')
 const ANTHROPIC_API_KEY = (process.env.ANTHROPIC_API_KEY || '').trim()
 
 if (!SUPABASE_URL || !SUPABASE_ANON_KEY || !ANTHROPIC_API_KEY) {
@@ -14,7 +16,7 @@ if (!SUPABASE_URL || !SUPABASE_ANON_KEY || !ANTHROPIC_API_KEY) {
     ANTHROPIC_API_KEY: !!ANTHROPIC_API_KEY,
   })
 } else {
-  console.log('[api/chat] Env vars OK — SUPABASE_ANON_KEY length:', SUPABASE_ANON_KEY.length, '| no newlines:', !SUPABASE_ANON_KEY.includes('\n'))
+  console.log('[api/chat] Env vars OK — SUPABASE_ANON_KEY length:', SUPABASE_ANON_KEY.length)
 }
 
 export default async function handler(req, res) {

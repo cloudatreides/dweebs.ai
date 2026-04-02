@@ -514,7 +514,7 @@ export default function ChatView() {
   }
 
   // Handle plot twist submission
-  const handlePlotTwist = (text) => {
+  const handlePlotTwist = async (text) => {
     setDirectorActive(true)
     setDirectorTwist(text)
     setPlotTwistOpen(false)
@@ -525,6 +525,56 @@ export default function ChatView() {
       timestamp: 'now',
     }
     setMessages(prev => [...prev, twistMsg])
+
+    // Build director notes inline — setDirectorTwist is async so we can't rely on state here
+    const choiceNotes = directorChoices.map(c =>
+      `[DIRECTOR NOTE: The scene shifts — ${c}. Characters should react to this change naturally.]`
+    )
+    const directorNotes = [...choiceNotes, `[PLOT TWIST: ${text}. All characters should react to this event in their next responses.]`].join('\n')
+
+    setTypingChar(chatCharacters[0])
+    try {
+      const currentMessages = [...messages, { type: 'system', text: `⚡ Plot twist: ${text}` }]
+      const { responses } = await getCharacterResponses({
+        characters: chatCharacters,
+        scene: chat.scene,
+        messages: currentMessages,
+        directorNotes,
+        worldMemory,
+      })
+
+      if (responses.length === 0) {
+        setTypingChar(null)
+        return
+      }
+
+      const dbMessages = responses.map(r => ({
+        group_chat_id: id,
+        sender_type: 'character',
+        sender_id: r.characterId,
+        content: r.text,
+      }))
+      const savedResponses = await addMessages(dbMessages)
+
+      for (let i = 0; i < responses.length; i++) {
+        const { characterId, text: responseText } = responses[i]
+        const char = chatCharacters.find(c => c.id === characterId)
+        setTypingChar(char || null)
+        if (i > 0) await delay(800)
+        await delay(600)
+        setTypingChar(null)
+        setMessages(prev => [...prev, {
+          id: savedResponses[i].id, type: 'character', characterId, text: responseText, timestamp: 'now',
+        }])
+        if (i < responses.length - 1) {
+          setTypingChar(chatCharacters.find(c => c.id === responses[i + 1].characterId) || null)
+        }
+      }
+      aiMessageCountRef.current += responses.length
+    } catch (err) {
+      console.error('Plot twist failed:', err.message)
+      setTypingChar(null)
+    }
   }
 
   // Handle End Scene
